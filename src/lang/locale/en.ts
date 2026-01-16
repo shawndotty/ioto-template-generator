@@ -1,0 +1,190 @@
+export default {
+	ASSIGNED_NOTE_NAME: "Assigned Note Name",
+	DEFAULT_EXCALIDRAW_TEMPLATE: "Default Excalidraw Template",
+	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION: "Default New Note Follow Up Action",
+	ENABLE_FUTURE_DAYS_CHOICES: "Enable Future Days Choices",
+	EXCLUDES_PATHS: "Excludes Paths",
+	FLEETING_NOTE_DATE_FORMAT: "Fleeting Note Date Format",
+	FLEETING_NOTE_FOLDER: "Fleeting Note Folder",
+	FLEETING_NOTE_PREFIX: "Fleeting Note Prefix",
+	FOLDER_PATH: "Folder Path",
+	INCLUDE_PARENT_FOLDER: "Include Parent Folder",
+	IS_OUTCOME_SELECTOR: "Is Outcome Selector",
+	NOTE_NAME_POSTFIX: "Note Name Postfix",
+	NOTE_NAME_PREFIX: "Note Name Prefix",
+	OPTION_CONTENT_TEMPLATE: "Option Content Template",
+	OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS: "Outcome Project Default Sub Folders",
+	PROJECT_NAME_FORMAT: "Project Name Format",
+	SHOW_BASE_PATH_IN_OPTION: "Show Base Path In Option",
+	SHOW_OPTION_ORDER: "Show Option Order",
+	TASK_FOLDER: "Task Folder",
+	TEMPLATE: "Template",
+	TIMESTAMP_FORMAT: "Timestamp Format",
+	USE_CUSTOM_TDL_NAME: "Use Custom Tdl Name",
+	SPECIFIC_FOLDER_PATH: "Specific Folder Path",
+	TURN_ON_SIMPLE_MODE: "Turn On Simple Mode",
+	INPUT_ASSIGNED_NOTE_NAME_DESC: "Input Assigned Note Name Desc",
+	OUTPUT_ASSIGNED_NOTE_NAME_DESC: "Output Assigned Note Name Desc",
+	OUTCOME_ASSIGNED_NOTE_NAME_DESC: "Outcome Assigned Note Name Desc",
+	INPUT_DEFAULT_EXCALIDRAW_TEMPLATE_DESC:
+		"Input Default Excalidraw Template Desc",
+	OUTPUT_DEFAULT_EXCALIDRAW_TEMPLATE_DESC:
+		"Output Default Excalidraw Template Desc",
+	OUTCOME_DEFAULT_EXCALIDRAW_TEMPLATE_DESC:
+		"Outcome Default Excalidraw Template Desc",
+	INPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC:
+		"Input Default New Note Follow Up Action Desc",
+	OUTPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC:
+		"Output Default New Note Follow Up Action Desc",
+	OUTCOME_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC:
+		"Outcome Default New Note Follow Up Action Desc",
+	TASK_ENABLE_FUTURE_DAYS_CHOICES_DESC:
+		"Task Enable Future Days Choices Desc",
+	INPUT_EXCLUDES_PATHS_DESC: "Input Excludes Paths Desc",
+	OUTPUT_EXCLUDES_PATHS_DESC: "Output Excludes Paths Desc",
+	OUTCOME_EXCLUDES_PATHS_DESC: "Outcome Excludes Paths Desc",
+	TASK_EXCLUDES_PATHS_DESC: "Task Excludes Paths Desc",
+	OUTPUT_FLEETING_NOTE_DATE_FORMAT_DESC:
+		"Output Fleeting Note Date Format Desc",
+	OUTPUT_FLEETING_NOTE_FOLDER_DESC: "Output Fleeting Note Folder Desc",
+	OUTPUT_FLEETING_NOTE_PREFIX_DESC: "Output Fleeting Note Prefix Desc",
+	INPUT_FOLDER_PATH_DESC: "Input Folder Path Desc",
+	OUTPUT_FOLDER_PATH_DESC: "Output Folder Path Desc",
+	OUTCOME_FOLDER_PATH_DESC: "Outcome Folder Path Desc",
+	TASK_FOLDER_PATH_DESC: "Task Folder Path Desc",
+	OUTCOME_INCLUDE_PARENT_FOLDER_DESC: "Outcome Include Parent Folder Desc",
+	OUTCOME_IS_OUTCOME_SELECTOR_DESC: "Outcome Is Outcome Selector Desc",
+	INPUT_NOTE_NAME_POSTFIX_DESC: "Input Note Name Postfix Desc",
+	OUTPUT_NOTE_NAME_POSTFIX_DESC: "Output Note Name Postfix Desc",
+	OUTCOME_NOTE_NAME_POSTFIX_DESC: "Outcome Note Name Postfix Desc",
+	INPUT_NOTE_NAME_PREFIX_DESC: "Input Note Name Prefix Desc",
+	OUTPUT_NOTE_NAME_PREFIX_DESC: "Output Note Name Prefix Desc",
+	OUTCOME_NOTE_NAME_PREFIX_DESC: "Outcome Note Name Prefix Desc",
+	INPUT_OPTION_CONTENT_TEMPLATE_DESC: "Input Option Content Template Desc",
+	OUTPUT_OPTION_CONTENT_TEMPLATE_DESC: "Output Option Content Template Desc",
+	OUTCOME_OPTION_CONTENT_TEMPLATE_DESC:
+		"Outcome Option Content Template Desc",
+	TASK_OPTION_CONTENT_TEMPLATE_DESC: "Task Option Content Template Desc",
+	OUTCOME_OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS_DESC:
+		"Outcome Outcome Project Default Sub Folders Desc",
+	TASK_PROJECT_NAME_FORMAT_DESC: "Task Project Name Format Desc",
+	INPUT_SHOW_BASE_PATH_IN_OPTION_DESC: "Input Show Base Path In Option Desc",
+	OUTPUT_SHOW_BASE_PATH_IN_OPTION_DESC:
+		"Output Show Base Path In Option Desc",
+	OUTCOME_SHOW_BASE_PATH_IN_OPTION_DESC:
+		"Outcome Show Base Path In Option Desc",
+	TASK_SHOW_BASE_PATH_IN_OPTION_DESC: "Task Show Base Path In Option Desc",
+	INPUT_SHOW_OPTION_ORDER_DESC: "Input Show Option Order Desc",
+	OUTPUT_SHOW_OPTION_ORDER_DESC: "Output Show Option Order Desc",
+	OUTCOME_SHOW_OPTION_ORDER_DESC: "Outcome Show Option Order Desc",
+	TASK_SHOW_OPTION_ORDER_DESC: "Task Show Option Order Desc",
+	OUTCOME_TASK_FOLDER_DESC: "Outcome Task Folder Desc",
+	INPUT_TEMPLATE_DESC: "Input Template Desc",
+	OUTPUT_TEMPLATE_DESC: "Output Template Desc",
+	OUTCOME_TEMPLATE_DESC: "Outcome Template Desc",
+	TASK_TEMPLATE_DESC: "Task Template Desc",
+	TASK_TIMESTAMP_FORMAT_DESC: "Task Timestamp Format Desc",
+	TASK_USE_CUSTOM_TDL_NAME_DESC: "Task Use Custom Tdl Name Desc",
+	CUSTOM_ASSIGNED_NOTE_NAME_DESC: "Custom Assigned Note Name Desc",
+	CUSTOM_DEFAULT_EXCALIDRAW_TEMPLATE_DESC:
+		"Custom Default Excalidraw Template Desc",
+	CUSTOM_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC:
+		"Custom Default New Note Follow Up Action Desc",
+	CUSTOM_EXCLUDES_PATHS_DESC: "Custom Excludes Paths Desc",
+	CUSTOM_FOLDER_PATH_DESC: "Custom Folder Path Desc",
+	CUSTOM_NOTE_NAME_POSTFIX_DESC: "Custom Note Name Postfix Desc",
+	CUSTOM_NOTE_NAME_PREFIX_DESC: "Custom Note Name Prefix Desc",
+	CUSTOM_OPTION_CONTENT_TEMPLATE_DESC: "Custom Option Content Template Desc",
+	CUSTOM_SHOW_BASE_PATH_IN_OPTION_DESC:
+		"Custom Show Base Path In Option Desc",
+	CUSTOM_SHOW_OPTION_ORDER_DESC: "Custom Show Option Order Desc",
+	CUSTOM_TEMPLATE_DESC: "Custom Template Desc",
+	CUSTOM_SPECIFIC_FOLDER_PATH_DESC: "Custom Specific Folder Path Desc",
+	CUSTOM_TURN_ON_SIMPLE_MODE_DESC: "Custom Turn On Simple Mode Desc",
+	INPUT_ASSIGNED_NOTE_NAME_EXAMPLE: "Input Assigned Note Name Example",
+	OUTPUT_ASSIGNED_NOTE_NAME_EXAMPLE: "Output Assigned Note Name Example",
+	OUTCOME_ASSIGNED_NOTE_NAME_EXAMPLE: "Outcome Assigned Note Name Example",
+	INPUT_DEFAULT_EXCALIDRAW_TEMPLATE_EXAMPLE:
+		"Input Default Excalidraw Template Example",
+	OUTPUT_DEFAULT_EXCALIDRAW_TEMPLATE_EXAMPLE:
+		"Output Default Excalidraw Template Example",
+	OUTCOME_DEFAULT_EXCALIDRAW_TEMPLATE_EXAMPLE:
+		"Outcome Default Excalidraw Template Example",
+	INPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE:
+		"Input Default New Note Follow Up Action Example",
+	OUTPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE:
+		"Output Default New Note Follow Up Action Example",
+	OUTCOME_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE:
+		"Outcome Default New Note Follow Up Action Example",
+	TASK_ENABLE_FUTURE_DAYS_CHOICES_EXAMPLE:
+		"Task Enable Future Days Choices Example",
+	INPUT_EXCLUDES_PATHS_EXAMPLE: "Input Excludes Paths Example",
+	OUTPUT_EXCLUDES_PATHS_EXAMPLE: "Output Excludes Paths Example",
+	OUTCOME_EXCLUDES_PATHS_EXAMPLE: "Outcome Excludes Paths Example",
+	TASK_EXCLUDES_PATHS_EXAMPLE: "Task Excludes Paths Example",
+	OUTPUT_FLEETING_NOTE_DATE_FORMAT_EXAMPLE:
+		"Output Fleeting Note Date Format Example",
+	OUTPUT_FLEETING_NOTE_FOLDER_EXAMPLE: "Output Fleeting Note Folder Example",
+	OUTPUT_FLEETING_NOTE_PREFIX_EXAMPLE: "Output Fleeting Note Prefix Example",
+	INPUT_FOLDER_PATH_EXAMPLE: "Input Folder Path Example",
+	OUTPUT_FOLDER_PATH_EXAMPLE: "Output Folder Path Example",
+	OUTCOME_FOLDER_PATH_EXAMPLE: "Outcome Folder Path Example",
+	TASK_FOLDER_PATH_EXAMPLE: "Task Folder Path Example",
+	OUTCOME_INCLUDE_PARENT_FOLDER_EXAMPLE:
+		"Outcome Include Parent Folder Example",
+	OUTCOME_IS_OUTCOME_SELECTOR_EXAMPLE: "Outcome Is Outcome Selector Example",
+	INPUT_NOTE_NAME_POSTFIX_EXAMPLE: "Input Note Name Postfix Example",
+	OUTPUT_NOTE_NAME_POSTFIX_EXAMPLE: "Output Note Name Postfix Example",
+	OUTCOME_NOTE_NAME_POSTFIX_EXAMPLE: "Outcome Note Name Postfix Example",
+	INPUT_NOTE_NAME_PREFIX_EXAMPLE: "Input Note Name Prefix Example",
+	OUTPUT_NOTE_NAME_PREFIX_EXAMPLE: "Output Note Name Prefix Example",
+	OUTCOME_NOTE_NAME_PREFIX_EXAMPLE: "Outcome Note Name Prefix Example",
+	INPUT_OPTION_CONTENT_TEMPLATE_EXAMPLE:
+		"Input Option Content Template Example",
+	OUTPUT_OPTION_CONTENT_TEMPLATE_EXAMPLE:
+		"Output Option Content Template Example",
+	OUTCOME_OPTION_CONTENT_TEMPLATE_EXAMPLE:
+		"Outcome Option Content Template Example",
+	TASK_OPTION_CONTENT_TEMPLATE_EXAMPLE:
+		"Task Option Content Template Example",
+	OUTCOME_OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS_EXAMPLE:
+		"Outcome Outcome Project Default Sub Folders Example",
+	TASK_PROJECT_NAME_FORMAT_EXAMPLE: "Task Project Name Format Example",
+	INPUT_SHOW_BASE_PATH_IN_OPTION_EXAMPLE:
+		"Input Show Base Path In Option Example",
+	OUTPUT_SHOW_BASE_PATH_IN_OPTION_EXAMPLE:
+		"Output Show Base Path In Option Example",
+	OUTCOME_SHOW_BASE_PATH_IN_OPTION_EXAMPLE:
+		"Outcome Show Base Path In Option Example",
+	TASK_SHOW_BASE_PATH_IN_OPTION_EXAMPLE:
+		"Task Show Base Path In Option Example",
+	INPUT_SHOW_OPTION_ORDER_EXAMPLE: "Input Show Option Order Example",
+	OUTPUT_SHOW_OPTION_ORDER_EXAMPLE: "Output Show Option Order Example",
+	OUTCOME_SHOW_OPTION_ORDER_EXAMPLE: "Outcome Show Option Order Example",
+	TASK_SHOW_OPTION_ORDER_EXAMPLE: "Task Show Option Order Example",
+	OUTCOME_TASK_FOLDER_EXAMPLE: "Outcome Task Folder Example",
+	INPUT_TEMPLATE_EXAMPLE: "Input Template Example",
+	OUTPUT_TEMPLATE_EXAMPLE: "Output Template Example",
+	OUTCOME_TEMPLATE_EXAMPLE: "Outcome Template Example",
+	TASK_TEMPLATE_EXAMPLE: "Task Template Example",
+	TASK_TIMESTAMP_FORMAT_EXAMPLE: "Task Timestamp Format Example",
+	TASK_USE_CUSTOM_TDL_NAME_EXAMPLE: "Task Use Custom TDL Name Example",
+	CUSTOM_ASSIGNED_NOTE_NAME_EXAMPLE: "Custom Assigned Note Name Example",
+	CUSTOM_DEFAULT_EXCALIDRAW_TEMPLATE_EXAMPLE:
+		"Custom Default Excalidraw Template Example",
+	CUSTOM_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE:
+		"Custom Default New Note Follow Up Action Example",
+	CUSTOM_EXCLUDES_PATHS_EXAMPLE: "Custom Excludes Paths Example",
+	CUSTOM_FOLDER_PATH_EXAMPLE: "Custom Folder Path Example",
+	CUSTOM_NOTE_NAME_POSTFIX_EXAMPLE: "Custom Note Name Postfix Example",
+	CUSTOM_NOTE_NAME_PREFIX_EXAMPLE: "Custom Note Name Prefix Example",
+	CUSTOM_OPTION_CONTENT_TEMPLATE_EXAMPLE:
+		"Custom Option Content Template Example",
+	CUSTOM_SHOW_BASE_PATH_IN_OPTION_EXAMPLE:
+		"Custom Show Base Path In Option Example",
+	CUSTOM_SHOW_OPTION_ORDER_EXAMPLE: "Custom Show Option Order Example",
+	CUSTOM_TEMPLATE_EXAMPLE: "Custom Template Example",
+	CUSTOM_SPECIFIC_FOLDER_PATH_EXAMPLE: "Custom Specific Folder Path Example",
+	CUSTOM_TURN_ON_SIMPLE_MODE_EXAMPLE: "Custom Turn On Simple Mode Example",
+	OPTION_TEMPLATE: "Create Note in {{folder}}",
+};
