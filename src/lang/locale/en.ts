@@ -274,4 +274,5 @@ export default {
 	SCRIPT_PREVIEW_NOTICE_SAVED: "Saved to the database as ${file}",
 	SCRIPT_PREVIEW_NOTICE_UPDATED: "Updated ${path}",
 	SCRIPT_PREVIEW_TITLE: "Generated script",
+	MAIN_RIBBON_GENERATOR: "Open Generator",
 };
