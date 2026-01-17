@@ -25,7 +25,9 @@ export class ScriptEngine {
 	): string {
 		let templates = "";
 		const usedFor = usage?.toLowerCase();
-		const iotoVariables = IOTO_VARIABLES[usedFor];
+		const iotoVariables = usedFor
+			? IOTO_VARIABLES[usedFor as keyof typeof IOTO_VARIABLES]
+			: "";
 		return "";
 	}
 }
