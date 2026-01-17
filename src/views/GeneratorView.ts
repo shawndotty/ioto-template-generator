@@ -92,7 +92,7 @@ export class GeneratorView extends ItemView {
 		});
 		setIcon(
 			toggle,
-			this.platformListCollapsed ? "chevrons-right" : "chevrons-left"
+			this.platformListCollapsed ? "chevrons-right" : "chevrons-left",
 		);
 		toggle.onclick = () => {
 			const grid = container.closest(".sync-generator-grid");
@@ -215,21 +215,21 @@ export class GeneratorView extends ItemView {
 
 		if (this.activeTab === "Folder") {
 			const rootOptions = TEMPLATE_OPTIONS.filter(
-				(o) => o.level === "Folder" && o.for === this.usage
+				(o) => o.level === "Folder" && o.for === this.usage,
 			);
 			rootOptions.forEach((opt) => {
 				this.renderOption(
 					formContainer,
 					opt,
 					this.folderSettings,
-					"Folder"
+					"Folder",
 				);
 			});
 		}
 
 		if (this.activeTab === "Note") {
 			const noteOptions = TEMPLATE_OPTIONS.filter(
-				(o) => o.level === "Note" && o.for === this.usage
+				(o) => o.level === "Note" && o.for === this.usage,
 			);
 
 			noteOptions.forEach((opt) => {
@@ -237,7 +237,7 @@ export class GeneratorView extends ItemView {
 					formContainer,
 					opt,
 					this.noteSettings,
-					"Note"
+					"Note",
 				);
 			});
 		}
@@ -247,7 +247,7 @@ export class GeneratorView extends ItemView {
 		container: HTMLElement,
 		opt: TemplateOption,
 		target: any,
-		section: string
+		section: string,
 	) {
 		const s = new Setting(container).setName(opt.title || opt.name);
 
@@ -286,7 +286,7 @@ export class GeneratorView extends ItemView {
 							(result) => {
 								target[opt.name] = result;
 								this.renderMiddleColumn();
-							}
+							},
 						).open();
 					});
 			});
@@ -296,7 +296,7 @@ export class GeneratorView extends ItemView {
 					.setValue(
 						target[opt.name]
 							? JSON.stringify(target[opt.name], null, 2)
-							: ""
+							: "",
 					)
 					.onChange((val) => {
 						try {
@@ -312,7 +312,7 @@ export class GeneratorView extends ItemView {
 				text.setValue(
 					target[opt.name] ||
 						(opt.defaultValue === "无" ? "" : opt.defaultValue) ||
-						""
+						"",
 				).onChange((val) => (target[opt.name] = val));
 				handleFocus(text.inputEl);
 			});
@@ -385,7 +385,7 @@ export class GeneratorView extends ItemView {
 				Note: t("GENERATOR_VIEW_TAB_NOTE"),
 			};
 			badge.setText(
-				levelMap[this.activeOption.level] || this.activeOption.level
+				levelMap[this.activeOption.level] || this.activeOption.level,
 			);
 
 			wrapper.createEl("div", {
@@ -424,19 +424,18 @@ export class GeneratorView extends ItemView {
 			this.usage = result.usage;
 			this.folderSettings = result.folderSettings;
 			this.noteSettings = result.noteSettings;
-			this.folderSettings = result.folderSettings;
 
 			new Notice(
 				t("GENERATOR_VIEW_NOTICE_IMPORTED").replace(
 					"${file}",
-					file.basename
-				)
+					file.basename,
+				),
 			);
 
 			// Update UI list active state
-			const platformList = this.containerEl.querySelector(".usage-list");
-			if (platformList) {
-				platformList.findAll(".usage-item").forEach((el) => {
+			const usageList = this.containerEl.querySelector(".usage-list");
+			if (usageList) {
+				usageList.findAll(".usage-item").forEach((el) => {
 					el.removeClass("is-active");
 					if (el.textContent === this.usage) el.addClass("is-active");
 				});
@@ -452,13 +451,13 @@ export class GeneratorView extends ItemView {
 		const script = ScriptEngine.generate(
 			this.usage,
 			this.folderSettings,
-			this.noteSettings
+			this.noteSettings,
 		);
 		new ScriptPreviewModal(
 			this.app,
 			script,
 			this.usage,
-			this.importedFile
+			this.importedFile,
 		).open();
 	}
 
@@ -473,7 +472,7 @@ export class GeneratorView extends ItemView {
 			this.app,
 			this.plugin.settings.presets || [],
 			currentSettings,
-			(preset) => this.savePreset(preset)
+			(preset) => this.savePreset(preset),
 		).open();
 	}
 
@@ -482,7 +481,7 @@ export class GeneratorView extends ItemView {
 			this.app,
 			this.plugin.settings.presets || [],
 			(preset) => this.loadPreset(preset),
-			(presetId) => this.deletePreset(presetId)
+			(presetId) => this.deletePreset(presetId),
 		).open();
 	}
 
@@ -518,7 +517,7 @@ export class GeneratorView extends ItemView {
 	async deletePreset(presetId: string) {
 		if (!this.plugin.settings.presets) return;
 		this.plugin.settings.presets = this.plugin.settings.presets.filter(
-			(p) => p.id !== presetId
+			(p) => p.id !== presetId,
 		);
 		await this.plugin.saveSettings();
 	}
@@ -553,8 +552,8 @@ export class GeneratorView extends ItemView {
 				new Notice(
 					t("GENERATOR_VIEW_NOTICE_TEMPLATE_NOT_FOUND").replace(
 						"${path}",
-						templatePath
-					)
+						templatePath,
+					),
 				);
 				return;
 			}
@@ -564,8 +563,8 @@ export class GeneratorView extends ItemView {
 			new Notice(
 				t("GENERATOR_VIEW_NOTICE_LOAD_FAILED").replace(
 					"${error}",
-					String(error)
-				)
+					String(error),
+				),
 			);
 		}
 	}
