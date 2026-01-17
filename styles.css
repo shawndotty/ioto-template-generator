@@ -1,8 +1,626 @@
-/*
+/* Sync Script Generator Grid Layout */
+.sync-generator-container {
+    height: 100%;
+    overflow: hidden;
+    padding: 0;
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.sync-generator-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr 300px;
+    height: 100%;
+    width: 100%;
+}
 
-If your plugin does not need CSS, delete this file.
+.sync-generator-grid.platforms-collapsed {
+    grid-template-columns: 40px 1fr 300px;
+}
 
-*/
+.sync-generator-grid.right-collapsed {
+    grid-template-columns: 200px 1fr 40px;
+}
+
+
+.sync-generator-grid.platforms-collapsed.right-collapsed {
+    grid-template-columns: 40px 1fr 40px;
+}
+
+.sync-generator-grid.platforms-collapsed .sync-generator-left{
+    padding: 20px 0;
+}
+
+.sync-generator-grid.platforms-collapsed .sync-generator-left .platform-header {
+    justify-content: center;
+}
+
+.sync-generator-grid.platforms-collapsed .sync-generator-left .platform-list {
+    padding: 0 6px;
+}
+
+.fetch-generator-grid.platforms-collapsed.right-collapsed {
+    grid-template-columns: 40px 1fr 40px;
+}
+
+.fetch-generator-grid.platforms-collapsed .fetch-generator-left{
+    padding: 20px 0;
+}
+
+.fetch-generator-grid.platforms-collapsed .fetch-generator-left .platform-header {
+    justify-content: center;
+}
+
+.fetch-generator-grid.platforms-collapsed .fetch-generator-left .platform-list {
+    padding: 0 6px;
+}
+
+
+
+/* Left Column: Platform List */
+.sync-generator-left {
+    border-right: 1px solid var(--background-modifier-border);
+    padding: 20px;
+    overflow-y: auto;
+    background-color: var(--background-secondary);
+    border-radius: 10px;
+}
+
+.sync-generator-left h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.platform-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 6px;
+}
+
+.platform-header h3 {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.platform-toggle {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.platform-toggle .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+.platform-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.platform-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    transition: background-color 0.2s;
+}
+
+.platform-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.platform-item.is-active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+    font-weight: bold;
+}
+
+.platform-list-collapsed .platform-item {
+    text-align: center;
+    padding: 6px 0;
+}
+
+.platform-list-collapsed .platform-item.is-active {
+    font-weight: 600;
+}
+
+/* Middle Column: Settings Form */
+.sync-generator-middle {
+    padding: 30px;
+    overflow-y: auto;
+    background-color: var(--background-primary);
+}
+
+.sync-generator-middle h2 {
+    margin-top: 0;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.action-bar {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.settings-form h3 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.8em;
+    letter-spacing: 0.5px;
+}
+
+/* Folder Settings Styles */
+.folder-setting-block {
+    border: 1px solid var(--background-modifier-border);
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background-color: var(--background-secondary-alt);
+}
+
+.folder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding: 10px;
+    cursor: pointer;
+}
+
+.folder-header:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.folder-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+}
+
+.folder-toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.folder-setting-block.is-collapsed .folder-toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.folder-content {
+    display: block;
+}
+
+.folder-setting-block.is-collapsed .folder-content {
+    display: none;
+}
+
+/* Right Column: Help & Description */
+.sync-generator-right {
+    border-left: 1px solid var(--background-modifier-border);
+    padding: 20px;
+    overflow-y: auto;
+    background-color: var(--background-secondary);
+    border-radius: 10px;
+}
+
+.sync-generator-right.is-collapsed {
+    padding: 20px 8px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.sync-generator-right h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 10px;
+}
+
+.help-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.help-header h3 {
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+    line-height: 1.2;
+}
+
+.help-toggle,
+.help-toggle-only {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.help-toggle .lucide,
+.help-toggle-only .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+.help-title {
+    margin-top: 0;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+}
+
+.help-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: var(--text-accent);
+    color: var(--text-on-accent);
+    border-radius: 10px;
+    font-size: 0.7em;
+    margin-bottom: 10px;
+}
+
+.help-desc {
+    margin-bottom: 15px;
+    line-height: 1.5;
+    color: var(--text-normal);
+    white-space: pre-wrap;
+}
+
+.help-example {
+    background-color: var(--background-primary);
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    font-family: var(--font-monospace);
+    font-size: 0.85em;
+    white-space: pre-wrap;
+    color: var(--text-muted);
+}
+
+.help-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    margin-top: 50px;
+}
+
+/* Script Preview Modal */
+.modal.mod-script-preview {
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+    width: 900px;
+    height: 700px;
+}
+
+.modal.mod-script-preview .modal-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.modal.mod-script-preview .script-editor-container {
+    flex-grow: 1;
+    width: 100%;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.modal.mod-script-preview .cm-editor {
+    height: 100%;
+}
+
+.modal.mod-script-preview.is-maximized {
+    width: 95vw;
+    height: 95vh;
+    max-width: 95vw;
+    max-height: 95vh;
+}
+
+/* Settings Tabs */
+.settings-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: 0;
+}
+
+.settings-tab-btn {
+    background: transparent;
+    border: none;
+    border-radius: 4px 4px 0 0;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.settings-tab-btn:hover {
+    color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+}
+
+.settings-tab-btn.is-active {
+    color: var(--text-normal);
+    background-color: var(--background-primary);
+    border-bottom: 2px solid var(--interactive-accent);
+}
+
+/* Object Edit Modal */
+.object-edit-modal {
+    display: flex;
+    flex-direction: column;
+    height: 30vh;
+    max-height: 80vh;
+    width: auto;
+    max-width: 90vw;
+}
+
+.object-edit-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.object-edit-items {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding-right: 5px;
+}
+
+.object-edit-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 15px;
+}
+
+.object-edit-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Array Edit Modal */
+.array-edit-modal {
+    display: flex;
+    flex-direction: column;
+    height: 30vh;
+    max-height: 80vh;
+    width: auto;
+    max-width: 90vw;
+}
+
+.array-edit-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.array-edit-items {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    padding-right: 5px;
+}
+
+.array-edit-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 15px;
+}
+
+.array-edit-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.array-edit-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.array-edit-value {
+    flex: 1;
+}
+
+.array-edit-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Folder Group Styles */
+.folder-group-block {
+    margin-bottom: 10px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.folder-group-header {
+    padding: 8px 12px;
+    background-color: var(--background-secondary-alt);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9em;
+}
+
+.folder-group-header:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.folder-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.folder-group-toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.folder-group-block.is-collapsed .folder-group-toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.folder-group-content {
+    padding: 10px;
+    background-color: var(--background-primary);
+}
+
+.folder-group-block.is-collapsed .folder-group-content {
+    display: none;
+}
+
+/* Preset Manager Modal */
+.modal.mod-preset-manager {
+    display: flex;
+    flex-direction: column;
+    max-width: 840px;
+    width: 640px;
+    max-height: 80vh;
+}
+
+.modal.mod-preset-manager .modal-content {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.preset-manager-modal h2 {
+    margin-bottom: 12px;
+}
+
+.preset-manager-modal .settings-tabs {
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.preset-manager-modal .settings-tab-btn {
+    padding: 10px 14px;
+    border-radius: 8px 8px 0 0;
+}
+
+.preset-manager-modal .preset-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.preset-manager-modal .preset-save-section,
+.preset-manager-modal .preset-load-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.preset-manager-modal .preset-save-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
+}
+
+.preset-manager-modal .presets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.preset-manager-modal .preset-platform-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.preset-manager-modal .preset-platform-group h4 {
+    margin: 0px;
+}
+
+.preset-manager-modal .preset-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 10px;
+    background-color: var(--background-primary);
+}
+
+.preset-manager-modal .preset-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.preset-manager-modal .preset-name {
+    font-weight: 600;
+}
+
+.preset-manager-modal .preset-date {
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+.preset-manager-modal .preset-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.preset-manager-modal .preset-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+    gap: 10px;
+}
+
+.setting-item-description.ssg-setting-description {
+    padding-left: 16px;
+}
+
+.ssg-folder-action-container {
+    display: flex;
+    justify-content: space-between;
+}

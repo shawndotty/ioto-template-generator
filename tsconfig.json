@@ -26,5 +26,5 @@
 	},
 	"include": [
 		"src/**/*.ts"
-	]
+, "src/ui/pickers/folder-picker.ts"	]
 }

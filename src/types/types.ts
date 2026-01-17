@@ -18,3 +18,19 @@ export interface TemplateOption {
 	description: string;
 	example?: string;
 }
+
+export interface ConfigPreset {
+	id: string;
+	name: string;
+	usage: Usage;
+	folderSettings: Record<string, string>;
+	noteSettings: Record<string, any>;
+	createdAt: number;
+	updatedAt: number;
+}
+
+export interface TemplateGeneratorSettings {
+	usage: Usage;
+	folderSettings: Record<string, string>;
+	noteSettings: Record<string, any>;
+}
