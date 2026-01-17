@@ -11,6 +11,16 @@ export const IOTO_VARIABLES = {
 	custom: `const {inputFolder, outputFolder, taskFolder, outcomeFolder, extraFolder, IOTOFrameworkPath} = app.plugins.plugins["ioto-settings"].settings;`,
 };
 
+export const IOTO_NOTE_TEMPLATES = {
+	input: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultInputNoteTemplate"), false);`,
+	output: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultOutputNoteTemplate"), false);`,
+	task: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultTaskNoteTemplate"), false);`,
+	outcome: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultOutcomeNoteTemplate"), false);`,
+	custom: `const noteTemplate = ""`,
+};
+
+export const IOTO_ML = `const ml = new (tp.user.IOTOMultiLangs(tp))(tp);`;
+
 export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "assignedNoteName",
@@ -119,7 +129,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${inputSelectorExcludesPaths ? inputSelectorExcludesPaths.trim().split("\n") : []}',
+			'${inputSelectorExcludesPaths ? inputSelectorExcludesPaths.trim().split("\\n") : []}',
 		description: t("INPUT_EXCLUDES_PATHS_DESC"),
 		example: t("INPUT_EXCLUDES_PATHS_EXAMPLE"),
 	},
@@ -130,7 +140,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${outputSelectorExcludesPaths ? outputSelectorExcludesPaths.trim().split("\n") : []}',
+			'${outputSelectorExcludesPaths ? outputSelectorExcludesPaths.trim().split("\\n") : []}',
 		description: t("OUTPUT_EXCLUDES_PATHS_DESC"),
 		example: t("OUTPUT_EXCLUDES_PATHS_EXAMPLE"),
 	},
@@ -141,7 +151,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${outcomeSelectorExcludesPaths ? outcomeSelectorExcludesPaths.trim().split("\n") : []}',
+			'${outcomeSelectorExcludesPaths ? outcomeSelectorExcludesPaths.trim().split("\\n") : []}',
 		description: t("OUTCOME_EXCLUDES_PATHS_DESC"),
 		example: t("OUTCOME_EXCLUDES_PATHS_EXAMPLE"),
 	},
@@ -152,7 +162,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${taskSelectorExcludesPaths ? taskSelectorExcludesPaths.split("\n") : []}',
+			'${taskSelectorExcludesPaths ? taskSelectorExcludesPaths.split("\\n") : []}',
 		description: t("TASK_EXCLUDES_PATHS_DESC"),
 		example: t("TASK_EXCLUDES_PATHS_EXAMPLE"),
 	},
@@ -353,7 +363,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${outcomeProjectDefaultSubFolders ? outcomeProjectDefaultSubFolders.trim().split("\n") : []}',
+			'${outcomeProjectDefaultSubFolders ? outcomeProjectDefaultSubFolders.trim().split("\\n") : []}',
 		description: t("OUTCOME_OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS_DESC"),
 		example: t("OUTCOME_OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS_EXAMPLE"),
 	},
@@ -523,7 +533,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		for: "Custom",
 		level: "Note",
 		valueType: "string",
-		defaultValue: '${tp.file.selection() ? tp.file.selection() : "}',
+		defaultValue: '${tp.file.selection() ? tp.file.selection() : ""}',
 		description: t("CUSTOM_ASSIGNED_NOTE_NAME_DESC"),
 		example: t("CUSTOM_ASSIGNED_NOTE_NAME_EXAMPLE"),
 	},
