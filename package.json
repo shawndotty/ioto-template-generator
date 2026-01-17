@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "ioto-template-generator",
 	"version": "2.0.0",
 	"description": "Template Generator for IOTO Framework",
 	"main": "main.js",
