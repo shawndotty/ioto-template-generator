@@ -3,6 +3,14 @@ import { t } from "../lang/helpers";
 
 export const GENERATOR_VIEW_TYPE = "ioto-template-generator-view";
 
+export const IOTO_VARIABLES = {
+	input: `const {inputFolder, LTDListInputSectionHeading, LTDListOutputSectionHeading, taskFolder, useUserTemplate, addLinkToCurrentTDL, defaultTDLDateFormat, inputSelectorExcludesPaths, inputSelectorShowOptionOrder, inputSelectorShowBasePath, inputSelectorFolderOptionTemplate, newInputNoteFollowUpAction, inputNoteNamePrefix, inputNoteNamePostfix, inputNoteDefaultExcalidrawTemplate, defaultTDLHeadingLevel, newInputNoteAddedToTDLFollowUpAction} = app.plugins.plugins["ioto-settings"].settings;`,
+	output: `const {outputFolder, LTDListOutcomeSectionHeading, LTDListOutputSectionHeading, taskFolder, useUserTemplate, addLinkToCurrentTDL, defaultTDLDateFormat, outputSelectorExcludesPaths, outputSelectorShowOptionOrder, outputSelectorShowBasePath, outputSelectorFolderOptionTemplate, newOutputNoteFollowUpAction, fleetingNoteFolder, fleetingNotePrefix, fleetingNoteDateFormat, outputNoteNamePrefix, outputNoteNamePostfix, outputNoteDefaultExcalidrawTemplate, defaultTDLHeadingLevel, newOutputNoteAddedToTDLFollowUpAction} = app.plugins.plugins["ioto-settings"].settings;`,
+	task: `const {taskFolder, useUserTemplate, defaultTDLDateFormat, projectNameFormat, taskSelectorExcludesPaths, taskSelectorShowOptionOrder, taskSelectorShowBasePath, taskSelectorFolderOptionTemplate, taskSelectorEnableFutureDaysChoices, taskSelectorUseCustomTdlNames} = app.plugins.plugins["ioto-settings"].settings;`,
+	outcome: `const {outcomeFolder, taskFolder, LTDListOutcomeSectionHeading, useUserTemplate, addLinkToCurrentTDL, defaultTDLDateFormat, outcomeSelectorExcludesPaths, outcomeSelectorShowOptionOrder, outcomeSelectorShowBasePath, outcomeSelectorFolderOptionTemplate, outcomeSelectorIncludeParentFolder, outcomeProjectDefaultSubFolders, newOutcomeNoteFollowUpAction, outcomeNoteNamePrefix, outcomeNoteNamePostfix, outcomeNoteDefaultExcalidrawTemplate, defaultTDLHeadingLevel, newOutcomeNoteAddedToTDLFollowUpAction} = app.plugins.plugins["ioto-settings"].settings;`,
+	custom: `const {inputFolder, outputFolder, taskFolder, outcomeFolder, extraFolder, IOTOFrameworkPath} = app.plugins.plugins["ioto-settings"].settings;`,
+};
+
 export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "assignedNoteName",

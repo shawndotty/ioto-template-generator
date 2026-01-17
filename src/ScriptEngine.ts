@@ -1,5 +1,5 @@
 import { Usage } from "./types/types";
-import { TEMPLATE_OPTIONS } from "./models/constants";
+import { TEMPLATE_OPTIONS, IOTO_VARIABLES } from "./models/constants";
 import { Notice } from "obsidian";
 
 export class ScriptEngine {
@@ -19,10 +19,13 @@ export class ScriptEngine {
 	}
 
 	static generate(
-		usage: Usage | null,
+		usage: Usage,
 		folderSettings: Record<string, any>,
 		noteSettings: Record<string, any>
 	): string {
+		let templates = "";
+		const usedFor = usage?.toLowerCase();
+		const iotoVariables = IOTO_VARIABLES[usedFor];
 		return "";
 	}
 }
