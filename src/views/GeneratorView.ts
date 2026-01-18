@@ -7,7 +7,12 @@ import {
 	setIcon,
 	TFile,
 } from "obsidian";
-import { Usage, TemplateOption, ConfigPreset } from "../types/types";
+import {
+	Usage,
+	TemplateOption,
+	ConfigPreset,
+	TemplateType,
+} from "../types/types";
 import { TEMPLATE_OPTIONS, GENERATOR_VIEW_TYPE } from "../models/constants";
 import { ImportModal } from "../modals/ImportModal";
 import { ScriptPreviewModal } from "../modals/ScriptPreviewModal";
@@ -21,6 +26,7 @@ import IOTOTemplateGeneratorPlugin from "../main";
 import { t } from "../lang/helpers";
 
 export class GeneratorView extends ItemView {
+	type: TemplateType = "Selector";
 	usage: Usage = "Input";
 	folderSettings: Record<string, string> = {};
 	noteSettings: Record<string, any> = {};
@@ -106,11 +112,8 @@ export class GeneratorView extends ItemView {
 			}
 			this.renderPlatformList(container);
 		};
-		const list = container.createEl("ul", {
-			cls: this.platformListCollapsed
-				? "usage-list usage-list-collapsed"
-				: "usage-list",
-		});
+
+		const types: TemplateType[] = ["Selector", "Switcher", "Template"];
 		const usages: Usage[] = [
 			"Input",
 			"Output",
@@ -118,29 +121,43 @@ export class GeneratorView extends ItemView {
 			"Outcome",
 			"Custom",
 		];
-		usages.forEach((p) => {
-			const label = this.platformListCollapsed ? p.charAt(0) : p;
-			const item = list.createEl("li", {
-				text: label,
+		types.forEach((t) => {
+			const typeItem = container.createEl("h4", {
+				text: t,
 				cls: "usage-item",
 			});
-			if (p === this.usage) item.addClass("is-active");
 
-			item.onclick = () => {
-				this.usage = p;
-				// Reset imported file context when switching usages manually
-				this.importedFile = null;
-				this.folderSettings = {};
-				this.noteSettings = {};
+			const list = container.createEl("ul", {
+				cls: this.platformListCollapsed
+					? "usage-list usage-list-collapsed"
+					: "usage-list",
+			});
+			usages.forEach((u) => {
+				const label = this.platformListCollapsed ? u.charAt(0) : u;
+				const item = list.createEl("li", {
+					text: label,
+					cls: "usage-item",
+				});
+				if (u === this.usage && t === this.type)
+					item.addClass("is-active");
 
-				container
-					.findAll(".usage-item")
-					.forEach((el) => el.removeClass("is-active"));
-				item.addClass("is-active");
-				this.renderMiddleColumn();
-				this.activeOption = null;
-				this.renderRightColumn();
-			};
+				item.onclick = () => {
+					this.type = t;
+					this.usage = u;
+					// Reset imported file context when switching usages manually
+					this.importedFile = null;
+					this.folderSettings = {};
+					this.noteSettings = {};
+
+					container
+						.findAll(".usage-item")
+						.forEach((el) => el.removeClass("is-active"));
+					item.addClass("is-active");
+					this.renderMiddleColumn();
+					this.activeOption = null;
+					this.renderRightColumn();
+				};
+			});
 		});
 	}
 
@@ -215,7 +232,10 @@ export class GeneratorView extends ItemView {
 
 		if (this.activeTab === "Folder") {
 			const rootOptions = TEMPLATE_OPTIONS.filter(
-				(o) => o.level === "Folder" && o.for === this.usage,
+				(o) =>
+					o.level === "Folder" &&
+					o.for === this.usage &&
+					o.type === this.type,
 			).sort((a, b) => a.order - b.order);
 			rootOptions.forEach((opt) => {
 				this.renderOption(
@@ -229,7 +249,10 @@ export class GeneratorView extends ItemView {
 
 		if (this.activeTab === "Note") {
 			const noteOptions = TEMPLATE_OPTIONS.filter(
-				(o) => o.level === "Note" && o.for === this.usage,
+				(o) =>
+					o.level === "Note" &&
+					o.for === this.usage &&
+					o.type === this.type,
 			).sort((a, b) => a.order - b.order);
 
 			noteOptions.forEach((opt) => {

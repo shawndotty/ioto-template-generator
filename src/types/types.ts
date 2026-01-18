@@ -1,3 +1,4 @@
+export type TemplateType = "Selector" | "Switcher" | "Template";
 export type Usage = "Input" | "Output" | "Task" | "Outcome" | "Custom";
 export type Level = "Folder" | "Note";
 export type ValueType =
@@ -11,6 +12,7 @@ export type ValueType =
 export interface TemplateOption {
 	name: string;
 	title: string;
+	type: TemplateType;
 	for: Usage;
 	order: number;
 	level: Level;

@@ -25,6 +25,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "folderPath",
 		title: t("FOLDER_PATH"),
+		type: "Selector",
 		for: "Input",
 		order: 1,
 		level: "Folder",
@@ -36,6 +37,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "template",
 		title: t("TEMPLATE"),
+		type: "Selector",
 		for: "Input",
 		order: 1,
 		level: "Note",
@@ -47,6 +49,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "taskFolder",
 		title: t("TASK_FOLDER"),
+		type: "Selector",
 		for: "Outcome",
 		order: 1,
 		level: "Folder",
@@ -58,6 +61,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "folderPath",
 		title: t("FOLDER_PATH"),
+		type: "Selector",
 		for: "Output",
 		order: 1,
 		level: "Folder",
@@ -69,6 +73,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "template",
 		title: t("TEMPLATE"),
+		type: "Selector",
 		for: "Output",
 		order: 1,
 		level: "Note",
@@ -80,6 +85,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "folderPath",
 		title: t("FOLDER_PATH"),
+		type: "Selector",
 		for: "Outcome",
 		order: 1,
 		level: "Folder",
@@ -91,6 +97,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "template",
 		title: t("TEMPLATE"),
+		type: "Selector",
 		for: "Outcome",
 		order: 1,
 		level: "Note",
@@ -102,6 +109,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "template",
 		title: t("TEMPLATE"),
+		type: "Selector",
 		for: "Task",
 		order: 1,
 		level: "Note",
@@ -113,6 +121,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "folderPath",
 		title: t("FOLDER_PATH"),
+		type: "Selector",
 		for: "Task",
 		order: 1,
 		level: "Folder",
@@ -124,6 +133,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "folderPath",
 		title: t("FOLDER_PATH"),
+		type: "Selector",
 		for: "Custom",
 		order: 1,
 		level: "Folder",
@@ -135,6 +145,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "template",
 		title: t("TEMPLATE"),
+		type: "Selector",
 		for: "Custom",
 		order: 1,
 		level: "Note",
@@ -146,6 +157,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "assignedNoteName",
 		title: t("ASSIGNED_NOTE_NAME"),
+		type: "Selector",
 		for: "Input",
 		order: 2,
 		level: "Note",
@@ -157,6 +169,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "useCustomTDLName",
 		title: t("USE_CUSTOM_TDL_NAME"),
+		type: "Selector",
 		for: "Task",
 		order: 2,
 		level: "Note",
@@ -168,6 +181,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "assignedNoteName",
 		title: t("ASSIGNED_NOTE_NAME"),
+		type: "Selector",
 		for: "Output",
 		order: 2,
 		level: "Note",
@@ -179,6 +193,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "assignedNoteName",
 		title: t("ASSIGNED_NOTE_NAME"),
+		type: "Selector",
 		for: "Outcome",
 		order: 2,
 		level: "Note",
@@ -190,6 +205,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "assignedNoteName",
 		title: t("ASSIGNED_NOTE_NAME"),
+		type: "Selector",
 		for: "Custom",
 		order: 2,
 		level: "Note",
@@ -201,6 +217,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showSubFolders",
 		title: t("SHOW_SUB_FOLDERS"),
+		type: "Selector",
 		for: "Input",
 		order: 2,
 		level: "Folder",
@@ -212,6 +229,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showSubFolders",
 		title: t("SHOW_SUB_FOLDERS"),
+		type: "Selector",
 		for: "Output",
 		order: 2,
 		level: "Folder",
@@ -223,6 +241,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showSubFolders",
 		title: t("SHOW_SUB_FOLDERS"),
+		type: "Selector",
 		for: "Task",
 		order: 2,
 		level: "Folder",
@@ -234,6 +253,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showSubFolders",
 		title: t("SHOW_SUB_FOLDERS"),
+		type: "Selector",
 		for: "Outcome",
 		order: 2,
 		level: "Folder",
@@ -245,6 +265,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showSubFolders",
 		title: t("SHOW_SUB_FOLDERS"),
+		type: "Selector",
 		for: "Custom",
 		order: 2,
 		level: "Folder",
@@ -256,18 +277,20 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "excludesPaths",
 		title: t("EXCLUDES_PATHS"),
+		type: "Selector",
 		for: "Input",
 		order: 3,
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${inputSelectorExcludesPaths ? inputSelectorExcludesPaths.trim().split("\n") : []}',
+			'${inputSelectorExcludesPaths ? inputSelectorExcludesPaths.trim().split("\\n") : []}',
 		description: t("INPUT_EXCLUDES_PATHS_DESC"),
 		example: t("INPUT_EXCLUDES_PATHS_EXAMPLE"),
 	},
 	{
 		name: "noteNamePrefix",
 		title: t("NOTE_NAME_PREFIX"),
+		type: "Selector",
 		for: "Input",
 		order: 3,
 		level: "Note",
@@ -279,6 +302,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "projectNameFormat",
 		title: t("PROJECT_NAME_FORMAT"),
+		type: "Selector",
 		for: "Task",
 		order: 3,
 		level: "Note",
@@ -290,6 +314,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "noteNamePrefix",
 		title: t("NOTE_NAME_PREFIX"),
+		type: "Selector",
 		for: "Output",
 		order: 3,
 		level: "Note",
@@ -301,18 +326,20 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "excludesPaths",
 		title: t("EXCLUDES_PATHS"),
+		type: "Selector",
 		for: "Output",
 		order: 3,
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${outputSelectorExcludesPaths ? outputSelectorExcludesPaths.trim().split("\n") : []}',
+			'${outputSelectorExcludesPaths ? outputSelectorExcludesPaths.trim().split("\\n") : []}',
 		description: t("OUTPUT_EXCLUDES_PATHS_DESC"),
 		example: t("OUTPUT_EXCLUDES_PATHS_EXAMPLE"),
 	},
 	{
 		name: "noteNamePrefix",
 		title: t("NOTE_NAME_PREFIX"),
+		type: "Selector",
 		for: "Outcome",
 		order: 3,
 		level: "Note",
@@ -324,30 +351,33 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "excludesPaths",
 		title: t("EXCLUDES_PATHS"),
+		type: "Selector",
 		for: "Outcome",
 		order: 3,
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${outcomeSelectorExcludesPaths ? outcomeSelectorExcludesPaths.trim().split("\n") : []}',
+			'${outcomeSelectorExcludesPaths ? outcomeSelectorExcludesPaths.trim().split("\\n") : []}',
 		description: t("OUTCOME_EXCLUDES_PATHS_DESC"),
 		example: t("OUTCOME_EXCLUDES_PATHS_EXAMPLE"),
 	},
 	{
 		name: "excludesPaths",
 		title: t("EXCLUDES_PATHS"),
+		type: "Selector",
 		for: "Task",
 		order: 3,
 		level: "Folder",
 		valueType: "array",
 		defaultValue:
-			'${taskSelectorExcludesPaths ? taskSelectorExcludesPaths.split("\n") : []}',
+			'${taskSelectorExcludesPaths ? taskSelectorExcludesPaths.split("\\n") : []}',
 		description: t("TASK_EXCLUDES_PATHS_DESC"),
 		example: t("TASK_EXCLUDES_PATHS_EXAMPLE"),
 	},
 	{
 		name: "excludesPaths",
 		title: t("EXCLUDES_PATHS"),
+		type: "Selector",
 		for: "Custom",
 		order: 3,
 		level: "Folder",
@@ -359,6 +389,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showBasePathInOption",
 		title: t("SHOW_BASE_PATH_IN_OPTION"),
+		type: "Selector",
 		for: "Input",
 		order: 4,
 		level: "Folder",
@@ -370,6 +401,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "noteNamePostfix",
 		title: t("NOTE_NAME_POSTFIX"),
+		type: "Selector",
 		for: "Input",
 		order: 4,
 		level: "Note",
@@ -381,6 +413,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "isOutcomeSelector",
 		title: t("IS_OUTCOME_SELECTOR"),
+		type: "Selector",
 		for: "Outcome",
 		order: 4,
 		level: "Folder",
@@ -392,6 +425,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "timestampFormat",
 		title: t("TIMESTAMP_FORMAT"),
+		type: "Selector",
 		for: "Task",
 		order: 4,
 		level: "Note",
@@ -403,6 +437,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "noteNamePostfix",
 		title: t("NOTE_NAME_POSTFIX"),
+		type: "Selector",
 		for: "Output",
 		order: 4,
 		level: "Note",
@@ -414,6 +449,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showBasePathInOption",
 		title: t("SHOW_BASE_PATH_IN_OPTION"),
+		type: "Selector",
 		for: "Output",
 		order: 4,
 		level: "Folder",
@@ -425,6 +461,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "noteNamePostfix",
 		title: t("NOTE_NAME_POSTFIX"),
+		type: "Selector",
 		for: "Outcome",
 		order: 4,
 		level: "Note",
@@ -436,6 +473,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showBasePathInOption",
 		title: t("SHOW_BASE_PATH_IN_OPTION"),
+		type: "Selector",
 		for: "Task",
 		order: 4,
 		level: "Folder",
@@ -447,6 +485,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "noteNamePrefix",
 		title: t("NOTE_NAME_PREFIX"),
+		type: "Selector",
 		for: "Custom",
 		order: 4,
 		level: "Note",
@@ -458,6 +497,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "noteNamePostfix",
 		title: t("NOTE_NAME_POSTFIX"),
+		type: "Selector",
 		for: "Custom",
 		order: 4,
 		level: "Note",
@@ -469,6 +509,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showBasePathInOption",
 		title: t("SHOW_BASE_PATH_IN_OPTION"),
+		type: "Selector",
 		for: "Custom",
 		order: 4,
 		level: "Folder",
@@ -480,6 +521,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showOptionOrder",
 		title: t("SHOW_OPTION_ORDER"),
+		type: "Selector",
 		for: "Input",
 		order: 5,
 		level: "Folder",
@@ -491,6 +533,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultNewNoteFollowUpAction",
 		title: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION"),
+		type: "Selector",
 		for: "Input",
 		order: 5,
 		level: "Note",
@@ -502,6 +545,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "outcomeProjectDefaultSubFolders",
 		title: t("OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS"),
+		type: "Selector",
 		for: "Outcome",
 		order: 5,
 		level: "Folder",
@@ -514,6 +558,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "enableFutureDaysChoices",
 		title: t("ENABLE_FUTURE_DAYS_CHOICES"),
+		type: "Selector",
 		for: "Task",
 		order: 5,
 		level: "Note",
@@ -525,6 +570,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showOptionOrder",
 		title: t("SHOW_OPTION_ORDER"),
+		type: "Selector",
 		for: "Output",
 		order: 5,
 		level: "Folder",
@@ -536,6 +582,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultNewNoteFollowUpAction",
 		title: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION"),
+		type: "Selector",
 		for: "Output",
 		order: 5,
 		level: "Note",
@@ -547,6 +594,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultNewNoteFollowUpAction",
 		title: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION"),
+		type: "Selector",
 		for: "Outcome",
 		order: 5,
 		level: "Note",
@@ -558,6 +606,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showOptionOrder",
 		title: t("SHOW_OPTION_ORDER"),
+		type: "Selector",
 		for: "Task",
 		order: 5,
 		level: "Folder",
@@ -569,6 +618,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultNewNoteFollowUpAction",
 		title: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION"),
+		type: "Selector",
 		for: "Custom",
 		order: 5,
 		level: "Note",
@@ -580,6 +630,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showOptionOrder",
 		title: t("SHOW_OPTION_ORDER"),
+		type: "Selector",
 		for: "Custom",
 		order: 5,
 		level: "Folder",
@@ -591,6 +642,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "optionContentTemplate",
 		title: t("OPTION_CONTENT_TEMPLATE"),
+		type: "Selector",
 		for: "Input",
 		order: 6,
 		level: "Folder",
@@ -602,6 +654,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "includeParentFolder",
 		title: t("INCLUDE_PARENT_FOLDER"),
+		type: "Selector",
 		for: "Outcome",
 		order: 6,
 		level: "Folder",
@@ -613,6 +666,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "optionContentTemplate",
 		title: t("OPTION_CONTENT_TEMPLATE"),
+		type: "Selector",
 		for: "Output",
 		order: 6,
 		level: "Folder",
@@ -624,6 +678,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "optionContentTemplate",
 		title: t("OPTION_CONTENT_TEMPLATE"),
+		type: "Selector",
 		for: "Task",
 		order: 6,
 		level: "Folder",
@@ -635,6 +690,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultExcalidrawTemplate",
 		title: t("DEFAULT_EXCALIDRAW_TEMPLATE"),
+		type: "Selector",
 		for: "Custom",
 		order: 6,
 		level: "Note",
@@ -646,6 +702,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "optionContentTemplate",
 		title: t("OPTION_CONTENT_TEMPLATE"),
+		type: "Selector",
 		for: "Custom",
 		order: 6,
 		level: "Folder",
@@ -657,6 +714,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "addLinkToTDL",
 		title: t("ADD_LINK_TO_TDL"),
+		type: "Selector",
 		for: "Input",
 		order: 6,
 		level: "Note",
@@ -668,6 +726,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "addLinkToTDL",
 		title: t("ADD_LINK_TO_TDL"),
+		type: "Selector",
 		for: "Output",
 		order: 6,
 		level: "Note",
@@ -679,6 +738,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "addLinkToTDL",
 		title: t("ADD_LINK_TO_TDL"),
+		type: "Selector",
 		for: "Outcome",
 		order: 6,
 		level: "Note",
@@ -690,6 +750,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultExcalidrawTemplate",
 		title: t("DEFAULT_EXCALIDRAW_TEMPLATE"),
+		type: "Selector",
 		for: "Input",
 		order: 7,
 		level: "Note",
@@ -701,6 +762,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultExcalidrawTemplate",
 		title: t("DEFAULT_EXCALIDRAW_TEMPLATE"),
+		type: "Selector",
 		for: "Output",
 		order: 7,
 		level: "Note",
@@ -712,6 +774,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showBasePathInOption",
 		title: t("SHOW_BASE_PATH_IN_OPTION"),
+		type: "Selector",
 		for: "Outcome",
 		order: 7,
 		level: "Folder",
@@ -723,6 +786,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "defaultExcalidrawTemplate",
 		title: t("DEFAULT_EXCALIDRAW_TEMPLATE"),
+		type: "Selector",
 		for: "Outcome",
 		order: 7,
 		level: "Note",
@@ -734,6 +798,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "fleetingNoteFolder",
 		title: t("FLEETING_NOTE_FOLDER"),
+		type: "Selector",
 		for: "Output",
 		order: 8,
 		level: "Note",
@@ -745,6 +810,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "showOptionOrder",
 		title: t("SHOW_OPTION_ORDER"),
+		type: "Selector",
 		for: "Outcome",
 		order: 8,
 		level: "Folder",
@@ -756,6 +822,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "fleetingNotePrefix",
 		title: t("FLEETING_NOTE_PREFIX"),
+		type: "Selector",
 		for: "Output",
 		order: 9,
 		level: "Note",
@@ -767,6 +834,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "optionContentTemplate",
 		title: t("OPTION_CONTENT_TEMPLATE"),
+		type: "Selector",
 		for: "Outcome",
 		order: 9,
 		level: "Folder",
@@ -778,6 +846,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 	{
 		name: "fleetingNoteDateFormat",
 		title: t("FLEETING_NOTE_DATE_FORMAT"),
+		type: "Selector",
 		for: "Output",
 		order: 10,
 		level: "Note",
