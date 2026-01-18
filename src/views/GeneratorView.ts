@@ -216,7 +216,7 @@ export class GeneratorView extends ItemView {
 		if (this.activeTab === "Folder") {
 			const rootOptions = TEMPLATE_OPTIONS.filter(
 				(o) => o.level === "Folder" && o.for === this.usage,
-			);
+			).sort((a, b) => a.order - b.order);
 			rootOptions.forEach((opt) => {
 				this.renderOption(
 					formContainer,
@@ -230,7 +230,7 @@ export class GeneratorView extends ItemView {
 		if (this.activeTab === "Note") {
 			const noteOptions = TEMPLATE_OPTIONS.filter(
 				(o) => o.level === "Note" && o.for === this.usage,
-			);
+			).sort((a, b) => a.order - b.order);
 
 			noteOptions.forEach((opt) => {
 				this.renderOption(

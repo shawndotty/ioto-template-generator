@@ -12,6 +12,7 @@ export interface TemplateOption {
 	name: string;
 	title: string;
 	for: Usage;
+	order: number;
 	level: Level;
 	defaultValue: any;
 	valueType: ValueType;

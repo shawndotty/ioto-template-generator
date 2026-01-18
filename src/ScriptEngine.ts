@@ -30,6 +30,11 @@ export class ScriptEngine {
 	): string {
 		let templates = "";
 		const usedFor = usage?.toLowerCase();
+
+		const templateFrontmatter = `/*\n** type: selector\n** for: ${usedFor}\n*/`;
+
+		templates += templateFrontmatter + "\n\n";
+
 		const iotoVariables = usedFor
 			? IOTO_VARIABLES[usedFor as keyof typeof IOTO_VARIABLES]
 			: "";
@@ -42,7 +47,7 @@ export class ScriptEngine {
 
 		templates += IOTO_ML + "\n\n";
 
-		templates += `const ${usedFor}sFolderSettings = {\n`;
+		templates += `const folderSettings = {\n`;
 
 		const folderOptions = TEMPLATE_OPTIONS.filter(
 			(o) => o.level === "Folder" && o.for === usage,
@@ -72,7 +77,7 @@ export class ScriptEngine {
 
 		templates += iotoNoteTemplate + "\n\n";
 
-		templates += `const ${usedFor}sNoteSettings = {\n`;
+		templates += `const noteSettings = {\n`;
 
 		const noteOptions = TEMPLATE_OPTIONS.filter(
 			(o) => o.level === "Note" && o.for === usage,
@@ -99,24 +104,36 @@ export class ScriptEngine {
 		});
 
 		templates += "}\n\n";
+
+		const folderPath = `
+let folderPath = "";
+
+if(folderSettings.showSubFolders) {
+	folderPath = await tp.user.IOTOGetFolderOption(tp, folderSettings);
+} else {
+	folderPath = folderSettings.folderPath;
+}`;
+
+		templates += folderPath + "\n\n";
+
+		let finalAction = "";
+
 		switch (usage) {
 			case "Task":
-				const taskAction = `await tp.user.IOTOCreateTasksList(tp, await tp.user.IOTOGetFolderOption(tp, ${usedFor}sFolderSettings), ${usedFor}sNoteSettings);`;
+				finalAction = `await tp.user.IOTOCreateTasksList(tp, folderPath, noteSettings);\n\n`;
 
-				templates += taskAction + "\n\n";
 				break;
 			case "Custom":
-				const noteAction = ``;
+				finalAction = `const newNoteLink = await tp.user.IOTOCreateOrOpenNote(tp, tR, folderPath, noteSettings);\n\n`;
 
-				templates += noteAction + "\n\n";
+				finalAction += `tR += newNoteLink;` + "\n\n";
+
 				break;
 			default:
-				const newNoteLink = `const newNoteLink = await tp.user.IOTOCreateOrOpenNote(tp, tR, await tp.user.IOTOGetFolderOption(tp, ${usedFor}sFolderSettings), ${usedFor}sNoteSettings);`;
-
-				templates += newNoteLink + "\n\n";
+				finalAction = `const newNoteLink = await tp.user.IOTOCreateOrOpenNote(tp, tR, folderPath, noteSettings);\n\n`;
 
 				const tdl = `
-if(addLinkToCurrentTDL) {
+if(noteSettings.addLinkToTDL) {
 	const addLinkToTDLSettings = {
 		taskFolder: taskFolder,
 		targetHeading: LTDList${usage}SectionHeading,
@@ -128,9 +145,13 @@ if(addLinkToCurrentTDL) {
 } else {
 	tR += newNoteLink;
 }`;
-				templates += tdl + "\n\n";
+				finalAction += tdl + "\n\n";
+
+				break;
 		}
 
-		return "<%*\n" + templates + "\n_%>";
+		templates += finalAction;
+
+		return "<%*\n" + templates + "_%>";
 	}
 }
