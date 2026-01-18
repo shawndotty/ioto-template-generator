@@ -247,7 +247,7 @@ export default {
 	PRESET_MANAGER_TITLE: "Preset configuration",
 	GENERATOR_VIEW_BTN_ADD_FOLDER: "Add folder settings",
 	GENERATOR_VIEW_BTN_BROWSE: "Browse",
-	GENERATOR_VIEW_BTN_GENERATE: "Generate synchronization script",
+	GENERATOR_VIEW_BTN_GENERATE: "Generate Template",
 	GENERATOR_VIEW_BTN_IMPORT_TEMPLATE: "Import Template",
 	GENERATOR_VIEW_BTN_LOAD_DEFAULT: "Load default template",
 	GENERATOR_VIEW_BTN_PRESETS: "Load Preset",

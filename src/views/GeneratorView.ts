@@ -206,63 +206,65 @@ export class GeneratorView extends ItemView {
 		const tabsContainer = this.middleContainer.createDiv({
 			cls: "settings-tabs",
 		});
-		const tabs: ("Folder" | "Note")[] = ["Folder", "Note"];
+		if ("Selector" === this.type) {
+			const tabs: ("Folder" | "Note")[] = ["Folder", "Note"];
 
-		const tabNames: Record<string, string> = {
-			Folder: t("GENERATOR_VIEW_TAB_FOLDER"),
-			Note: t("GENERATOR_VIEW_TAB_NOTE"),
-		};
-
-		tabs.forEach((tab) => {
-			const tabBtn = tabsContainer.createEl("button", {
-				text: `${tabNames[tab]} ${t("GENERATOR_VIEW_SETTINGS_SUFFIX")}`,
-				cls: "settings-tab-btn",
-			});
-			if (this.activeTab === tab) tabBtn.addClass("is-active");
-
-			tabBtn.onclick = () => {
-				this.activeTab = tab;
-				this.renderMiddleColumn();
+			const tabNames: Record<string, string> = {
+				Folder: t("GENERATOR_VIEW_TAB_FOLDER"),
+				Note: t("GENERATOR_VIEW_TAB_NOTE"),
 			};
-		});
 
-		const formContainer = this.middleContainer.createDiv({
-			cls: "settings-form",
-		});
+			tabs.forEach((tab) => {
+				const tabBtn = tabsContainer.createEl("button", {
+					text: `${tabNames[tab]} ${t("GENERATOR_VIEW_SETTINGS_SUFFIX")}`,
+					cls: "settings-tab-btn",
+				});
+				if (this.activeTab === tab) tabBtn.addClass("is-active");
 
-		if (this.activeTab === "Folder") {
-			const rootOptions = TEMPLATE_OPTIONS.filter(
-				(o) =>
-					o.level === "Folder" &&
-					o.for === this.usage &&
-					o.type === this.type,
-			).sort((a, b) => a.order - b.order);
-			rootOptions.forEach((opt) => {
-				this.renderOption(
-					formContainer,
-					opt,
-					this.folderSettings,
-					"Folder",
-				);
+				tabBtn.onclick = () => {
+					this.activeTab = tab;
+					this.renderMiddleColumn();
+				};
 			});
-		}
 
-		if (this.activeTab === "Note") {
-			const noteOptions = TEMPLATE_OPTIONS.filter(
-				(o) =>
-					o.level === "Note" &&
-					o.for === this.usage &&
-					o.type === this.type,
-			).sort((a, b) => a.order - b.order);
-
-			noteOptions.forEach((opt) => {
-				this.renderOption(
-					formContainer,
-					opt,
-					this.noteSettings,
-					"Note",
-				);
+			const formContainer = this.middleContainer.createDiv({
+				cls: "settings-form",
 			});
+
+			if (this.activeTab === "Folder") {
+				const rootOptions = TEMPLATE_OPTIONS.filter(
+					(o) =>
+						o.level === "Folder" &&
+						o.for === this.usage &&
+						o.type === this.type,
+				).sort((a, b) => a.order - b.order);
+				rootOptions.forEach((opt) => {
+					this.renderOption(
+						formContainer,
+						opt,
+						this.folderSettings,
+						"Folder",
+					);
+				});
+			}
+
+			if (this.activeTab === "Note") {
+				const noteOptions = TEMPLATE_OPTIONS.filter(
+					(o) =>
+						o.level === "Note" &&
+						o.for === this.usage &&
+						o.type === this.type,
+				).sort((a, b) => a.order - b.order);
+
+				noteOptions.forEach((opt) => {
+					this.renderOption(
+						formContainer,
+						opt,
+						this.noteSettings,
+						"Note",
+					);
+				});
+			}
 		}
 	}
 
@@ -471,14 +473,30 @@ export class GeneratorView extends ItemView {
 	}
 
 	generateScript() {
-		const script = ScriptEngine.generate(
-			this.usage,
-			this.folderSettings,
-			this.noteSettings,
-		);
+		let template = "";
+		switch (this.type) {
+			case "Selector":
+				template = ScriptEngine.generate(
+					this.usage,
+					this.folderSettings,
+					this.noteSettings,
+				);
+
+				break;
+			case "Switcher":
+				template = "Switcher";
+
+				break;
+
+			case "Template":
+				template = "Template";
+
+			default:
+				break;
+		}
 		new ScriptPreviewModal(
 			this.app,
-			script,
+			template,
 			this.usage,
 			this.importedFile,
 		).open();
