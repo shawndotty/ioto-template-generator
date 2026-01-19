@@ -5,6 +5,8 @@ import {
 	IOTO_NOTE_TEMPLATES,
 	IOTO_ML,
 } from "./models/constants";
+
+import { SWITCHERS_TEMPLATE_OPTIONS } from "./models/constantsSwitcher";
 import { Notice } from "obsidian";
 
 export class ScriptEngine {
@@ -61,8 +63,6 @@ export class ScriptEngine {
 	): string {
 		let templates = "";
 		const usedFor = usage?.toLowerCase();
-
-		console.dir(folderSettings);
 
 		const templateFrontmatter = `/*\n** type: selector\n** for: ${usedFor}\n*/`;
 
@@ -198,6 +198,141 @@ if(noteSettings.addLinkToTDL) {
 		templates += finalAction;
 
 		return "<%*\n" + templates + "_%>";
+	}
+
+	static generateSwitcher(
+		usage: Usage,
+		folderSettings: Record<string, any>,
+	): string {
+		let templates = "";
+		const usedFor = usage?.toLowerCase();
+
+		const templateFrontmatter = `/*\n** type: switcher\n** for: ${usedFor}\n*/`;
+		templates += templateFrontmatter + "\n\n";
+
+		let header = "";
+
+		switch (usedFor) {
+			case "input":
+			case "output":
+				header = `
+const utilClass = tp.user.IOTOUtility(tp, app);
+const util = new utilClass(tp, app);
+const folder = tp.file.folder(true);
+const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter?.Project;`;
+				break;
+			case "outcome":
+				header = `
+const utilClass = tp.user.IOTOUtility(tp, app);
+const util = new utilClass(tp, app);
+const folder = tp.file.folder(true);
+const {projectNameFormat} = app.plugins.plugins["ioto-settings"].settings;
+const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);`;
+				break;
+			case "task":
+				header = `
+const {LTDListInputSectionHeading, LTDListOutputSectionHeading, LTDListOutcomeSectionHeading, defaultTDLDateFormat, projectNameFormat, defaultTDLHeadingLevel} = app.plugins.plugins["ioto-settings"].settings;
+const utilClass = tp.user.IOTOUtility(tp, app);
+const util = new utilClass(tp, app);
+const folder = tp.file.folder(true);
+const projectName = await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);`;
+				break;
+			default:
+				break;
+		}
+
+		templates += header + "\n\n";
+
+		const foldOptions = SWITCHERS_TEMPLATE_OPTIONS.filter(
+			(o) => o.level === "Folder" && o.for === usage,
+		);
+
+		let prefixStr = "";
+		let frontmatterStr = "";
+		let switchersStr = "";
+		let defaultTemplate = "";
+
+		foldOptions.forEach((opt) => {
+			const userVal = folderSettings[opt.name];
+			const defaultVal = opt.defaultValue;
+			const valueType = opt.valueType;
+			const key = opt.name;
+			const val =
+				userVal !== undefined && userVal !== defaultVal
+					? userVal
+					: defaultVal;
+
+			switch (key) {
+				case "useFullPath":
+					prefixStr += `const pathMode = ${val}; \nconst prefix = pathMode ? folder : folder.split("/").last();`;
+					break;
+				case "shareFrontMatters":
+					frontmatterStr += `const frontMatter = {\n`;
+					frontmatterStr += '\tProject: \`["${projectName}"]\`,\n';
+					Object.entries(val).forEach(([key, val]) => {
+						// 根据类型决定是否需要引号
+						if (typeof val === "string") {
+							frontmatterStr += `\t${key}: "${val}",\n`;
+						} else if (
+							typeof val === "boolean" ||
+							typeof val === "number"
+						) {
+							frontmatterStr += `\t${key}: ${val},\n`;
+						} else if (Array.isArray(val)) {
+							frontmatterStr += `\t${key}: ${JSON.stringify(val)},\n`;
+						} else {
+							// 其他类型（如对象）也使用 JSON 字符串化
+							frontmatterStr += `\t${key}: ${JSON.stringify(val)},\n`;
+						}
+					});
+
+					frontmatterStr += "};";
+					break;
+				case "switchers":
+					switchersStr += `const switchers = ${JSON.stringify(val, null, "\t")};\n`;
+					break;
+
+				case "defaultTemplate":
+					defaultTemplate = val;
+					break;
+
+				default:
+					break;
+			}
+		});
+
+		templates += prefixStr + "\n\n";
+
+		templates += frontmatterStr + "\n\n";
+
+		templates += switchersStr + "\n\n";
+
+		const footer = `
+const matched = switchers.find(item => prefix.includes(item.match));
+let includeNote = "";
+if (matched) {
+	includedNote = (await tp.file.include(\`[[\${matched.template}]]\`)) || "";
+    
+} else {
+	includedNote = (await tp.file.include(\`[[${defaultTemplate}]]\`)) || "";
+}
+
+tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
+
+		templates += footer;
+
+		let finalTemplate = "<%*\n" + templates + "\n_%>";
+
+		const taskAppended = `\n
+<%*\nif (tp.file.title.includes("未命名") || tp.file.title.toLowerCase().includes("untitle")) {
+	await tp.file.rename(projectName + "-" + tp.date.now(defaultTDLDateFormat));
+}\n_%>`;
+
+		if (usedFor === "task") {
+			finalTemplate += taskAppended;
+		}
+
+		return finalTemplate;
 	}
 
 	private static convertFirstLetterToUpperCase(str: string) {

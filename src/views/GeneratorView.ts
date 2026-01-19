@@ -676,22 +676,18 @@ export class GeneratorView extends ItemView {
 		let template = "";
 		switch (this.type) {
 			case "Selector":
-				console.dir(this.folderSettings);
 				template = ScriptEngine.generateSelector(
 					this.usage,
 					this.folderSettings,
 					this.noteSettings,
 				);
-
 				break;
 			case "Switcher":
-				template = "Switcher";
-
+				template = ScriptEngine.generateSwitcher(
+					this.usage,
+					this.folderSettings,
+				);
 				break;
-
-			case "Template":
-				template = "Template";
-
 			default:
 				break;
 		}
