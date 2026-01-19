@@ -5,6 +5,7 @@ export type ValueType =
 	| "string"
 	| "boolean"
 	| "array"
+	| "object"
 	| "file"
 	| "integer"
 	| "path";
