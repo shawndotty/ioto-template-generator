@@ -73,7 +73,7 @@ export class GeneratorView extends ItemView {
 
 		// Left Column: Usage List
 		const leftCol = grid.createDiv({ cls: "sync-generator-left" });
-		this.renderPlatformList(leftCol);
+		this.renderUsageList(leftCol);
 
 		// Middle Column: Settings Form
 		this.middleContainer = grid.createDiv({ cls: "sync-generator-middle" });
@@ -85,7 +85,7 @@ export class GeneratorView extends ItemView {
 		this.renderRightColumn();
 	}
 
-	renderPlatformList(container: HTMLElement) {
+	renderUsageList(container: HTMLElement) {
 		container.empty();
 		const header = container.createDiv({ cls: "usage-header" });
 		if (!this.platformListCollapsed) {
@@ -110,7 +110,7 @@ export class GeneratorView extends ItemView {
 					grid.removeClass("usages-collapsed");
 				}
 			}
-			this.renderPlatformList(container);
+			this.renderUsageList(container);
 		};
 
 		const types: TemplateType[] = ["Selector", "Switcher", "Template"];
@@ -137,6 +137,7 @@ export class GeneratorView extends ItemView {
 				const item = list.createEl("li", {
 					text: label,
 					cls: "usage-item",
+					attr: { "data-type": t, "data-usage": u },
 				});
 				if (u === this.usage && t === this.type)
 					item.addClass("is-active");
@@ -232,13 +233,13 @@ export class GeneratorView extends ItemView {
 			});
 
 			if (this.activeTab === "Folder") {
-				const rootOptions = TEMPLATE_OPTIONS.filter(
+				const folderOptions = TEMPLATE_OPTIONS.filter(
 					(o) =>
 						o.level === "Folder" &&
 						o.for === this.usage &&
 						o.type === this.type,
 				).sort((a, b) => a.order - b.order);
-				rootOptions.forEach((opt) => {
+				folderOptions.forEach((opt) => {
 					this.renderOption(
 						formContainer,
 						opt,
@@ -283,7 +284,7 @@ export class GeneratorView extends ItemView {
 		if (opt.valueType === "boolean") {
 			s.addToggle((toggle) => {
 				toggle
-					.setValue(target[opt.name] ?? opt.defaultValue === "true")
+					.setValue(target[opt.name] ?? opt.defaultValue === true)
 					.onChange((val) => (target[opt.name] = val));
 				handleFocus(toggle.toggleEl);
 			});
@@ -332,11 +333,29 @@ export class GeneratorView extends ItemView {
 					});
 				handleFocus(text.inputEl);
 			});
+		} else if (opt.valueType === "integer") {
+			s.addText((text) => {
+				text.setValue(
+					target[opt.name] ||
+						(opt.defaultValue === ""
+							? ""
+							: opt.defaultValue.toString()) ||
+						"",
+				).onChange((val) => {
+					// 只允许输入数字
+					if (/^\d*$/.test(val)) {
+						target[opt.name] = val;
+					}
+				});
+				// 设置输入类型为数字
+				text.inputEl.type = "number";
+				handleFocus(text.inputEl);
+			});
 		} else {
 			s.addText((text) => {
 				text.setValue(
 					target[opt.name] ||
-						(opt.defaultValue === "无" ? "" : opt.defaultValue) ||
+						(opt.defaultValue === "" ? "" : opt.defaultValue) ||
 						"",
 				).onChange((val) => (target[opt.name] = val));
 				handleFocus(text.inputEl);
@@ -443,32 +462,48 @@ export class GeneratorView extends ItemView {
 		const content = await this.app.vault.read(file);
 		this.importedFile = file;
 
-		const result = ScriptEngine.parse(content);
+		switch (this.type) {
+			case "Selector":
+				const result = ScriptEngine.parseSelector(content);
 
-		if (result.usage) {
-			this.usage = result.usage;
-			this.folderSettings = result.folderSettings;
-			this.noteSettings = result.noteSettings;
+				if (result.usage && result.type) {
+					this.type = result.type;
+					this.usage = result.usage;
+					this.folderSettings = result.folderSettings;
+					this.noteSettings = result.noteSettings;
 
-			new Notice(
-				t("GENERATOR_VIEW_NOTICE_IMPORTED").replace(
-					"${file}",
-					file.basename,
-				),
-			);
+					new Notice(
+						t("GENERATOR_VIEW_NOTICE_IMPORTED").replace(
+							"${file}",
+							file.basename,
+						),
+					);
 
-			// Update UI list active state
-			const usageList = this.containerEl.querySelector(".usage-list");
-			if (usageList) {
-				usageList.findAll(".usage-item").forEach((el) => {
-					el.removeClass("is-active");
-					if (el.textContent === this.usage) el.addClass("is-active");
-				});
-			}
+					// Update UI list active state
+					const usageList =
+						this.containerEl.querySelector(".usage-list");
+					if (usageList) {
+						usageList.findAll(".usage-item").forEach((el) => {
+							el.removeClass("is-active");
+							if (
+								el.dataset.usage === this.usage &&
+								el.dataset.type === this.type
+							)
+								el.addClass("is-active");
+						});
+					}
 
-			this.renderMiddleColumn();
-		} else {
-			new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
+					this.renderMiddleColumn();
+				} else {
+					new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
+				}
+				break;
+			case "Switcher":
+				break;
+			case "Template":
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -476,7 +511,8 @@ export class GeneratorView extends ItemView {
 		let template = "";
 		switch (this.type) {
 			case "Selector":
-				template = ScriptEngine.generate(
+				console.dir(this.folderSettings);
+				template = ScriptEngine.generateSelector(
 					this.usage,
 					this.folderSettings,
 					this.noteSettings,

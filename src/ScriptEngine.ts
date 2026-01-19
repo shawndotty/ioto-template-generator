@@ -1,4 +1,4 @@
-import { Usage } from "./types/types";
+import { Usage, TemplateType } from "./types/types";
 import {
 	TEMPLATE_OPTIONS,
 	IOTO_VARIABLES,
@@ -8,28 +8,130 @@ import {
 import { Notice } from "obsidian";
 
 export class ScriptEngine {
-	static parse(content: string): {
+	static parseSelector(content: string): {
 		usage: Usage | null;
+		type: TemplateType | null;
 		folderSettings: Record<string, any>;
 		noteSettings: Record<string, any>;
 	} {
 		let usage: Usage | null = null;
+		let type: TemplateType | null = null;
 		let folderSettings: Record<string, string> = {};
 		let noteSettings: Record<string, any> = {};
+
+		const typeMatch = content.match(/\*\* type: (\w+)\n/);
+		if (typeMatch) {
+			type = this.convertFirstLetterToUpperCase(
+				typeMatch[1] || "",
+			) as TemplateType;
+		}
+
+		const usageMatch = content.match(/\*\* for: (\w+)\n/);
+		if (usageMatch) {
+			usage = this.convertFirstLetterToUpperCase(
+				usageMatch[1] || "",
+			) as Usage;
+		}
+
+		if (!type || !usage) {
+			return {
+				usage: null,
+				type: null,
+				folderSettings: {},
+				noteSettings: {},
+			};
+		}
+
+		const folderSettingsRegex = new RegExp(
+			`const folderSettings\\s*=\\s*\\{`,
+			"m",
+		);
+
+		const folderSettingsMatch = content.match(folderSettingsRegex);
+
+		if (folderSettingsMatch) {
+			const startObj =
+				folderSettingsMatch.index! + folderSettingsMatch[0].length - 1; // index of '{'
+			const endObj = this.findMatchingBracket(content, startObj);
+			if (endObj !== -1) {
+				const folderSettingStr = content.substring(
+					startObj,
+					endObj + 1,
+				);
+				const sanitizedConfig = folderSettingStr.replace(
+					/`([\s\S]*?)`/g,
+					(match, p1) => {
+						return (
+							'"' +
+							p1.replace(/"/g, '\\"').replace(/\n/g, "\\n") +
+							'"'
+						);
+					},
+				);
+
+				try {
+					const configObj = new Function(
+						"return " + sanitizedConfig,
+					)();
+					folderSettings = configObj;
+				} catch (error) {
+					console.error("Error parsing folderSettings:", error);
+				}
+			}
+		}
+
+		const noteSettingsRegex = new RegExp(
+			`const folderSettings\\s*=\\s*\\{`,
+			"m",
+		);
+
+		const noteSettingsMatch = content.match(folderSettingsRegex);
+
+		if (noteSettingsMatch) {
+			const startObj =
+				noteSettingsMatch.index! + noteSettingsMatch[0].length - 1; // index of '{'
+			const endObj = this.findMatchingBracket(content, startObj);
+			if (endObj !== -1) {
+				const noteSettingStr = content.substring(startObj, endObj + 1);
+				const sanitizedConfig = noteSettingStr.replace(
+					/`([\s\S]*?)`/g,
+					(match, p1) => {
+						return (
+							'"' +
+							p1.replace(/"/g, '\\"').replace(/\n/g, "\\n") +
+							'"'
+						);
+					},
+				);
+
+				try {
+					const configObj = new Function(
+						"return " + sanitizedConfig,
+					)();
+					noteSettings = configObj;
+				} catch (error) {
+					console.error("Error parsing noteSettings:", error);
+				}
+			}
+		}
+
 		return {
 			usage,
+			type,
 			folderSettings,
 			noteSettings,
 		};
 	}
 
-	static generate(
+	static generateSelector(
 		usage: Usage,
 		folderSettings: Record<string, any>,
 		noteSettings: Record<string, any>,
 	): string {
 		let templates = "";
 		const usedFor = usage?.toLowerCase();
+
+		console.dir(folderSettings);
 
 		const templateFrontmatter = `/*\n** type: selector\n** for: ${usedFor}\n*/`;
 
@@ -58,19 +160,25 @@ export class ScriptEngine {
 			const defaultVal = opt.defaultValue;
 			const valueType = opt.valueType;
 			const key = opt.name;
-			if (userVal && userVal !== defaultVal)
-				if (userVal.toString().includes("${"))
-					templates += `\t${key}: ` + `\`${userVal}\`,\n`;
-				else templates += `\t${key}: ` + `"${userVal}",\n`;
-			else if (
-				["array", "object", "interger", "boolean"].includes(valueType)
-			)
-				if (defaultVal.toString().includes("${"))
-					templates += `\t${key}: ` + `\`${defaultVal}\`,\n`;
-				else templates += `\t${key}: ` + `${defaultVal},\n`;
-			else if (defaultVal.toString().includes("${"))
-				templates += `\t${key}: ` + `\`${defaultVal}\`,\n`;
-			else templates += `\t${key}: ` + `"${defaultVal}",\n`;
+			const val =
+				userVal !== undefined && userVal !== defaultVal
+					? userVal
+					: defaultVal;
+			const isTpl = val?.toString().includes("${");
+			const isInt = valueType === "integer";
+			if (["string", "file", "path"].includes(valueType)) {
+				templates +=
+					`\t${key}: ` + (isTpl ? `\`${val}\`` : `"${val}"`) + ",\n";
+			} else {
+				templates +=
+					`\t${key}: ` +
+					(isInt
+						? `parseInt(${val})`
+						: isTpl
+							? val.toString().replace(/[$\{\}]/g, "")
+							: JSON.stringify(val)) +
+					",\n";
+			}
 		});
 
 		templates += "}\n\n";
@@ -88,19 +196,25 @@ export class ScriptEngine {
 			const defaultVal = opt.defaultValue;
 			const valueType = opt.valueType;
 			const key = opt.name;
-			if (userVal && userVal !== defaultVal)
-				if (userVal.toString().includes("${"))
-					templates += `\t${key}: ` + `\`${userVal}\`,\n`;
-				else templates += `\t${key}: ` + `"${userVal}",\n`;
-			else if (
-				["array", "object", "interger", "boolean"].includes(valueType)
-			)
-				if (defaultVal.toString().includes("${"))
-					templates += `\t${key}: ` + `\`${defaultVal}\`,\n`;
-				else templates += `\t${key}: ` + `${defaultVal},\n`;
-			else if (defaultVal.toString().includes("${"))
-				templates += `\t${key}: ` + `\`${defaultVal}\`,\n`;
-			else templates += `\t${key}: ` + `"${defaultVal}",\n`;
+			const val =
+				userVal !== undefined && userVal !== defaultVal
+					? userVal
+					: defaultVal;
+			const isTpl = val?.toString().includes("${");
+			const isInt = valueType === "integer";
+			if (["string", "file", "path"].includes(valueType)) {
+				templates +=
+					`\t${key}: ` + (isTpl ? `\`${val}\`` : `"${val}"`) + ",\n";
+			} else {
+				templates +=
+					`\t${key}: ` +
+					(isInt
+						? `${val}`
+						: isTpl
+							? val.toString().replace(/[$\{\}]/g, "")
+							: JSON.stringify(val)) +
+					",\n";
+			}
 		});
 
 		templates += "}\n\n";
@@ -153,5 +267,23 @@ if(noteSettings.addLinkToTDL) {
 		templates += finalAction;
 
 		return "<%*\n" + templates + "_%>";
+	}
+
+	private static convertFirstLetterToUpperCase(str: string) {
+		return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+
+	private static findMatchingBracket(text: string, start: number): number {
+		let count = 0;
+		const open = text[start];
+		const close = open === "[" ? "]" : "}";
+
+		for (let i = start; i < text.length; i++) {
+			if (text[i] === open) count++;
+			else if (text[i] === close) count--;
+
+			if (count === 0) return i;
+		}
+		return -1;
 	}
 }

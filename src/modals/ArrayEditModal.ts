@@ -16,7 +16,7 @@ export class ArrayEditModal extends Modal {
 		app: App,
 		title: string,
 		data: any[],
-		onSave: (result: any[]) => void
+		onSave: (result: any[]) => void,
 	) {
 		super(app);
 		this.title = title;
