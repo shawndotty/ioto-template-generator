@@ -91,6 +91,15 @@ export class ScriptEngine {
 			"frontMatter",
 		);
 
+		// 如果 shareFrontMatters 中存在 Project 属性，把它删掉
+		if (
+			shareFrontMatters &&
+			typeof shareFrontMatters === "object" &&
+			"Project" in shareFrontMatters
+		) {
+			delete shareFrontMatters.Project;
+		}
+
 		const switchers = this.parseSettingsArray(content, "switchers");
 
 		const pathModeMatch = content.match(
@@ -336,7 +345,17 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 				case "shareFrontMatters":
 					frontmatterStr += `const frontMatter = {\n`;
 					frontmatterStr += '\tProject: \`["${projectName}"]\`,\n';
-					Object.entries(val).forEach(([key, val]) => {
+					const targetFrontmatter = {};
+					if ("outcome" === usedFor) {
+						Object.assign(
+							targetFrontmatter,
+							{ Status: "进行中" },
+							val,
+						);
+					} else {
+						Object.assign(targetFrontmatter, val);
+					}
+					Object.entries(targetFrontmatter).forEach(([key, val]) => {
 						// 根据类型决定是否需要引号
 						if (typeof val === "string") {
 							frontmatterStr += `\t${key}: "${val}",\n`;
