@@ -16,8 +16,6 @@ export class ScriptEngine {
 	} {
 		let usage: Usage | null = null;
 		let type: TemplateType | null = null;
-		let folderSettings: Record<string, string> = {};
-		let noteSettings: Record<string, any> = {};
 
 		const typeMatch = content.match(/\*\* type: (\w+)\n/);
 		if (typeMatch) {
@@ -42,78 +40,11 @@ export class ScriptEngine {
 			};
 		}
 
-		const folderSettingsRegex = new RegExp(
-			`const folderSettings\\s*=\\s*\\{`,
-			"m",
+		const folderSettings = this.parseSettingsObject(
+			content,
+			"folderSettings",
 		);
-
-		const folderSettingsMatch = content.match(folderSettingsRegex);
-
-		if (folderSettingsMatch) {
-			const startObj =
-				folderSettingsMatch.index! + folderSettingsMatch[0].length - 1; // index of '{'
-			const endObj = this.findMatchingBracket(content, startObj);
-			if (endObj !== -1) {
-				const folderSettingStr = content.substring(
-					startObj,
-					endObj + 1,
-				);
-				const sanitizedConfig = folderSettingStr.replace(
-					/`([\s\S]*?)`/g,
-					(match, p1) => {
-						return (
-							'"' +
-							p1.replace(/"/g, '\\"').replace(/\n/g, "\\n") +
-							'"'
-						);
-					},
-				);
-
-				try {
-					const configObj = new Function(
-						"return " + sanitizedConfig,
-					)();
-					folderSettings = configObj;
-				} catch (error) {
-					console.error("Error parsing folderSettings:", error);
-				}
-			}
-		}
-
-		const noteSettingsRegex = new RegExp(
-			`const folderSettings\\s*=\\s*\\{`,
-			"m",
-		);
-
-		const noteSettingsMatch = content.match(folderSettingsRegex);
-
-		if (noteSettingsMatch) {
-			const startObj =
-				noteSettingsMatch.index! + noteSettingsMatch[0].length - 1; // index of '{'
-			const endObj = this.findMatchingBracket(content, startObj);
-			if (endObj !== -1) {
-				const noteSettingStr = content.substring(startObj, endObj + 1);
-				const sanitizedConfig = noteSettingStr.replace(
-					/`([\s\S]*?)`/g,
-					(match, p1) => {
-						return (
-							'"' +
-							p1.replace(/"/g, '\\"').replace(/\n/g, "\\n") +
-							'"'
-						);
-					},
-				);
-
-				try {
-					const configObj = new Function(
-						"return " + sanitizedConfig,
-					)();
-					noteSettings = configObj;
-				} catch (error) {
-					console.error("Error parsing noteSettings:", error);
-				}
-			}
-		}
+		const noteSettings = this.parseSettingsObject(content, "noteSettings");
 
 		return {
 			usage,
@@ -271,6 +202,31 @@ if(noteSettings.addLinkToTDL) {
 
 	private static convertFirstLetterToUpperCase(str: string) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+
+	private static parseSettingsObject(
+		content: string,
+		varName: string,
+	): Record<string, any> {
+		let settings: Record<string, any> = {};
+		const regex = new RegExp(`const\\s+${varName}\\s*=\\s*\\{`, "m");
+		const match = content.match(regex);
+		if (!match || match.index === undefined) return settings;
+		const startObj = match.index + match[0].length - 1;
+		const endObj = this.findMatchingBracket(content, startObj);
+		if (endObj === -1) return settings;
+		const raw = content.substring(startObj, endObj + 1);
+		const sanitized = raw.replace(/`([\s\S]*?)`/g, (_, p1) => {
+			const escaped = p1.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+			return `"${escaped}"`;
+		});
+		try {
+			const obj = new Function("return " + sanitized)();
+			if (obj && typeof obj === "object") {
+				settings = obj as Record<string, any>;
+			}
+		} catch {}
+		return settings;
 	}
 
 	private static findMatchingBracket(text: string, start: number): number {

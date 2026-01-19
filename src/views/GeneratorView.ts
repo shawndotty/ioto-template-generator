@@ -336,7 +336,7 @@ export class GeneratorView extends ItemView {
 		} else if (opt.valueType === "integer") {
 			s.addText((text) => {
 				text.setValue(
-					target[opt.name] ||
+					target[opt.name].toString() ||
 						(opt.defaultValue === ""
 							? ""
 							: opt.defaultValue.toString()) ||
