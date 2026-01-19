@@ -295,6 +295,14 @@ const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
 const projectName = await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);`;
 				break;
+			case "custom":
+				header = `
+const utilClass = tp.user.IOTOUtility(tp, app);
+const util = new utilClass(tp, app);
+const folder = tp.file.folder(true);
+const {projectNameFormat} = app.plugins.plugins["ioto-settings"].settings;
+const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);`;
+				break;
 			default:
 				break;
 		}
@@ -309,6 +317,7 @@ const projectName = await tp.user.IOTOCreateProjectName(tp.file.folder(true), pr
 		let frontmatterStr = "";
 		let switchersStr = "";
 		let defaultTemplate = "";
+		let defaultInclude = "";
 
 		foldOptions.forEach((opt) => {
 			const userVal = folderSettings[opt.name];
@@ -352,6 +361,9 @@ const projectName = await tp.user.IOTOCreateProjectName(tp.file.folder(true), pr
 
 				case "defaultTemplate":
 					defaultTemplate = val;
+					defaultInclude = defaultTemplate
+						? `(await tp.file.include(\`[[${defaultTemplate}]]\`))`
+						: `""`;
 					break;
 
 				default:
@@ -372,7 +384,7 @@ if (matched) {
 	includedNote = (await tp.file.include(\`[[\${matched.template}]]\`)) || "";
     
 } else {
-	includedNote = (await tp.file.include(\`[[${defaultTemplate}]]\`)) || "";
+	includedNote = ${defaultInclude};
 }
 
 tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
