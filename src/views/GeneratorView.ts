@@ -455,23 +455,16 @@ export class GeneratorView extends ItemView {
 						renderList();
 					});
 				});
-
-				// Add Button
-				const addBtnContainer = listContainer.createDiv({
-					cls: "switcher-array-add",
-				});
-				addBtnContainer.style.paddingLeft = "20px";
-				addBtnContainer.style.marginTop = "8px";
-
-				s.addButton((btn) => {
-					btn.setButtonText("Add Item")
-						.setIcon("plus")
-						.onClick(() => {
-							items.push({ match: "", template: "" });
-							renderList();
-						});
-				});
 			};
+
+			s.addButton((btn) => {
+				btn.setButtonText("Add Item")
+					.setIcon("plus")
+					.onClick(() => {
+						target[opt.name].push({ match: "", template: "" });
+						renderList();
+					});
+			});
 
 			renderList();
 		} else if (opt.valueType === "object") {
