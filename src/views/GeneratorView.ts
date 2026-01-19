@@ -6,6 +6,7 @@ import {
 	ButtonComponent,
 	setIcon,
 	TFile,
+	TextComponent,
 } from "obsidian";
 import {
 	Usage,
@@ -14,6 +15,7 @@ import {
 	TemplateType,
 } from "../types/types";
 import { TEMPLATE_OPTIONS, GENERATOR_VIEW_TYPE } from "../models/constants";
+import { SWITCHERS_TEMPLATE_OPTIONS } from "../models/constantsSwitcher";
 import { ImportModal } from "../modals/ImportModal";
 import { ScriptPreviewModal } from "../modals/ScriptPreviewModal";
 import { ObjectEditModal } from "../modals/ObjectEditModal";
@@ -113,7 +115,7 @@ export class GeneratorView extends ItemView {
 			this.renderUsageList(container);
 		};
 
-		const types: TemplateType[] = ["Selector", "Switcher", "Template"];
+		const types: TemplateType[] = ["Selector", "Switcher"];
 		const usages: Usage[] = [
 			"Input",
 			"Output",
@@ -207,6 +209,9 @@ export class GeneratorView extends ItemView {
 		const tabsContainer = this.middleContainer.createDiv({
 			cls: "settings-tabs",
 		});
+		const formContainer = this.middleContainer.createDiv({
+			cls: "settings-form",
+		});
 		if ("Selector" === this.type) {
 			const tabs: ("Folder" | "Note")[] = ["Folder", "Note"];
 
@@ -226,10 +231,6 @@ export class GeneratorView extends ItemView {
 					this.activeTab = tab;
 					this.renderMiddleColumn();
 				};
-			});
-
-			const formContainer = this.middleContainer.createDiv({
-				cls: "settings-form",
 			});
 
 			if (this.activeTab === "Folder") {
@@ -266,6 +267,22 @@ export class GeneratorView extends ItemView {
 					);
 				});
 			}
+		}
+		if ("Switcher" === this.type) {
+			const switcherOptions = SWITCHERS_TEMPLATE_OPTIONS.filter(
+				(o) =>
+					o.level === "Folder" &&
+					o.for === this.usage &&
+					o.type === this.type,
+			).sort((a, b) => a.order - b.order);
+			switcherOptions.forEach((opt) => {
+				this.renderSwitcherOption(
+					formContainer,
+					opt,
+					this.folderSettings,
+					"Folder",
+				);
+			});
 		}
 	}
 
@@ -349,6 +366,161 @@ export class GeneratorView extends ItemView {
 				});
 				// 设置输入类型为数字
 				text.inputEl.type = "number";
+				handleFocus(text.inputEl);
+			});
+		} else {
+			s.addText((text) => {
+				text.setValue(
+					target[opt.name] ||
+						(opt.defaultValue === "" ? "" : opt.defaultValue) ||
+						"",
+				).onChange((val) => (target[opt.name] = val));
+				handleFocus(text.inputEl);
+			});
+		}
+	}
+
+	renderSwitcherOption(
+		container: HTMLElement,
+		opt: TemplateOption,
+		target: any,
+		section: string,
+	) {
+		const s = new Setting(container).setName(opt.title || opt.name);
+
+		const handleFocus = (el: HTMLElement) => {
+			this.addFocusListener(el, opt);
+		};
+
+		if (opt.valueType === "boolean") {
+			s.addToggle((toggle) => {
+				toggle
+					.setValue(target[opt.name] ?? opt.defaultValue === true)
+					.onChange((val) => (target[opt.name] = val));
+				handleFocus(toggle.toggleEl);
+			});
+		} else if (opt.valueType === "array") {
+			const listContainer = container.createDiv({
+				cls: "switcher-array-list-container",
+			});
+			// Ensure it's an array
+			if (!Array.isArray(target[opt.name])) {
+				if (Array.isArray(opt.defaultValue)) {
+					target[opt.name] = JSON.parse(
+						JSON.stringify(opt.defaultValue),
+					);
+				} else {
+					target[opt.name] = [];
+				}
+			}
+
+			const renderList = () => {
+				listContainer.empty();
+				const items = target[opt.name];
+
+				items.forEach((item: any, index: number) => {
+					const row = listContainer.createDiv({
+						cls: "switcher-array-row",
+					});
+					row.style.display = "flex";
+					row.style.alignItems = "center";
+					row.style.gap = "10px";
+					row.style.marginBottom = "8px";
+					row.style.paddingLeft = "20px";
+
+					// Match Input
+					const matchInput = new TextComponent(row);
+					matchInput.setPlaceholder("Match");
+					matchInput.setValue(item.match || "");
+					matchInput.onChange((val) => {
+						item.match = val;
+					});
+					matchInput.inputEl.style.width = "150px";
+
+					// Template Input
+					const templateInput = new TextComponent(row);
+					templateInput.setPlaceholder("Template");
+					templateInput.setValue(item.template || "");
+					templateInput.onChange((val) => {
+						item.template = val;
+					});
+					templateInput.inputEl.style.flex = "1";
+
+					// Delete Button
+					const delBtn = new ButtonComponent(row);
+					delBtn.setIcon("trash");
+					delBtn.setTooltip("Delete");
+					delBtn.onClick(() => {
+						items.splice(index, 1);
+						renderList();
+					});
+				});
+
+				// Add Button
+				const addBtnContainer = listContainer.createDiv({
+					cls: "switcher-array-add",
+				});
+				addBtnContainer.style.paddingLeft = "20px";
+				addBtnContainer.style.marginTop = "8px";
+
+				s.addButton((btn) => {
+					btn.setButtonText("Add Item")
+						.setIcon("plus")
+						.onClick(() => {
+							items.push({ match: "", template: "" });
+							renderList();
+						});
+				});
+			};
+
+			renderList();
+		} else if (opt.valueType === "object") {
+			s.addExtraButton((btn) => {
+				btn.setIcon("pencil")
+					.setTooltip(t("GENERATOR_VIEW_TOOLTIP_EDIT_OBJECT"))
+					.onClick(() => {
+						let currentData = target[opt.name];
+						if (typeof currentData === "string") {
+							try {
+								currentData = JSON.parse(currentData);
+							} catch {
+								currentData = {};
+							}
+						}
+						if (
+							!currentData ||
+							typeof currentData !== "object" ||
+							Array.isArray(currentData)
+						) {
+							currentData = {};
+						}
+
+						new ObjectEditModal(
+							this.app,
+							opt.title || opt.name,
+							currentData,
+							(result) => {
+								target[opt.name] = result;
+								this.renderMiddleColumn();
+							},
+						).open();
+					});
+			});
+
+			s.addTextArea((text) => {
+				text.setPlaceholder(opt.example || "")
+					.setValue(
+						target[opt.name]
+							? JSON.stringify(target[opt.name], null, 2)
+							: "",
+					)
+					.onChange((val) => {
+						try {
+							target[opt.name] = JSON.parse(val);
+						} catch (e) {
+							// Silent failure for partial JSON input
+						}
+					});
 				handleFocus(text.inputEl);
 			});
 		} else {
