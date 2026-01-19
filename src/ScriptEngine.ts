@@ -56,6 +56,22 @@ export class ScriptEngine {
 		};
 	}
 
+	static parseSwitcher(content: string): {
+		usage: Usage | null;
+		type: TemplateType | null;
+		folderSettings: Record<string, any>;
+		noteSettings: Record<string, any>;
+	} {
+		let usage: Usage | null = null;
+		let type: TemplateType | null = null;
+		return {
+			usage,
+			type,
+			folderSettings: {},
+			noteSettings: {},
+		};
+	}
+
 	static generateSelector(
 		usage: Usage,
 		folderSettings: Record<string, any>,
