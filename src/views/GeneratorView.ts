@@ -627,71 +627,60 @@ export class GeneratorView extends ItemView {
 		const content = await this.app.vault.read(file);
 		this.importedFile = file;
 
+		// 提取公共逻辑
+		const applyResult = (result: {
+			usage?: Usage;
+			type?: TemplateType;
+			folderSettings?: Record<string, any>;
+			noteSettings?: Record<string, any>;
+		}) => {
+			if (result.usage && result.type) {
+				this.type = result.type;
+				this.usage = result.usage;
+				this.folderSettings = result.folderSettings || {};
+				this.noteSettings = result.noteSettings || {};
+				new Notice(
+					t("GENERATOR_VIEW_NOTICE_IMPORTED").replace(
+						"${file}",
+						file.basename,
+					),
+				);
+				// 更新 UI 列表激活状态
+				const usageList = this.containerEl.querySelector(".usage-list");
+				if (usageList) {
+					usageList.findAll(".usage-item").forEach((el) => {
+						el.removeClass("is-active");
+						if (
+							el.dataset.usage === this.usage &&
+							el.dataset.type === this.type
+						)
+							el.addClass("is-active");
+					});
+				}
+				this.renderMiddleColumn();
+			} else {
+				new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
+			}
+		};
+
 		switch (this.type) {
 			case "Selector":
 				const result = ScriptEngine.parseSelector(content);
-
-				if (result.usage && result.type) {
-					this.type = result.type;
-					this.usage = result.usage;
-					this.folderSettings = result.folderSettings;
-					this.noteSettings = result.noteSettings;
-					new Notice(
-						t("GENERATOR_VIEW_NOTICE_IMPORTED").replace(
-							"${file}",
-							file.basename,
-						),
-					);
-					// Update UI list active state
-					const usageList =
-						this.containerEl.querySelector(".usage-list");
-					if (usageList) {
-						usageList.findAll(".usage-item").forEach((el) => {
-							el.removeClass("is-active");
-							if (
-								el.dataset.usage === this.usage &&
-								el.dataset.type === this.type
-							)
-								el.addClass("is-active");
-						});
-					}
-
-					this.renderMiddleColumn();
-				} else {
-					new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
-				}
+				applyResult({
+					usage: result.usage ?? undefined,
+					type: result.type ?? undefined,
+					folderSettings: result.folderSettings,
+					noteSettings: result.noteSettings,
+				});
 				break;
 			case "Switcher":
 				const switcherResult = ScriptEngine.parseSwitcher(content);
-
-				if (switcherResult.usage && switcherResult.type) {
-					this.type = switcherResult.type;
-					this.usage = switcherResult.usage;
-					this.folderSettings = switcherResult.folderSettings;
-					new Notice(
-						t("GENERATOR_VIEW_NOTICE_IMPORTED").replace(
-							"${file}",
-							file.basename,
-						),
-					);
-					// Update UI list active state
-					const usageList =
-						this.containerEl.querySelector(".usage-list");
-					if (usageList) {
-						usageList.findAll(".usage-item").forEach((el) => {
-							el.removeClass("is-active");
-							if (
-								el.dataset.usage === this.usage &&
-								el.dataset.type === this.type
-							)
-								el.addClass("is-active");
-						});
-					}
-
-					this.renderMiddleColumn();
-				} else {
-					new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
-				}
+				applyResult({
+					usage: switcherResult.usage ?? undefined,
+					type: switcherResult.type ?? undefined,
+					folderSettings: switcherResult.folderSettings,
+					noteSettings: switcherResult.noteSettings,
+				});
 				break;
 			default:
 				break;
