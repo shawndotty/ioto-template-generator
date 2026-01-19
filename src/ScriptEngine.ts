@@ -60,15 +60,57 @@ export class ScriptEngine {
 		usage: Usage | null;
 		type: TemplateType | null;
 		folderSettings: Record<string, any>;
-		noteSettings: Record<string, any>;
 	} {
 		let usage: Usage | null = null;
 		let type: TemplateType | null = null;
+
+		const typeMatch = content.match(/\*\* type: (\w+)\n/);
+		if (typeMatch) {
+			type = this.convertFirstLetterToUpperCase(
+				typeMatch[1] || "",
+			) as TemplateType;
+		}
+
+		const usageMatch = content.match(/\*\* for: (\w+)\n/);
+		if (usageMatch) {
+			usage = this.convertFirstLetterToUpperCase(
+				usageMatch[1] || "",
+			) as Usage;
+		}
+
+		if (!type || !usage) {
+			return {
+				usage: null,
+				type: null,
+				folderSettings: {},
+			};
+		}
+
+		const shareFrontMatters = this.parseSettingsObject(
+			content,
+			"frontMatter",
+		);
+
+		const switchers = this.parseSettingsArray(content, "switchers");
+
+		const pathModeMatch = content.match(
+			/const\s+pathMode\s*=\s*(true|false);/,
+		);
+		const useFullPath = pathModeMatch ? pathModeMatch[1] === "true" : false;
+		const defaultTemplate = content.match(
+			/tp.file.include\(`\[\[([^$\{]+)\]\]`\)/,
+		);
+		const defaultTemplateName = defaultTemplate ? defaultTemplate[1] : "";
+
 		return {
 			usage,
 			type,
-			folderSettings: {},
-			noteSettings: {},
+			folderSettings: {
+				shareFrontMatters,
+				switchers,
+				useFullPath,
+				defaultTemplateName,
+			},
 		};
 	}
 
@@ -361,6 +403,31 @@ tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
 	): Record<string, any> {
 		let settings: Record<string, any> = {};
 		const regex = new RegExp(`const\\s+${varName}\\s*=\\s*\\{`, "m");
+		const match = content.match(regex);
+		if (!match || match.index === undefined) return settings;
+		const startObj = match.index + match[0].length - 1;
+		const endObj = this.findMatchingBracket(content, startObj);
+		if (endObj === -1) return settings;
+		const raw = content.substring(startObj, endObj + 1);
+		const sanitized = raw.replace(/`([\s\S]*?)`/g, (_, p1) => {
+			const escaped = p1.replace(/"/g, '\\"').replace(/\n/g, "\\n");
+			return `"${escaped}"`;
+		});
+		try {
+			const obj = new Function("return " + sanitized)();
+			if (obj && typeof obj === "object") {
+				settings = obj as Record<string, any>;
+			}
+		} catch {}
+		return settings;
+	}
+
+	private static parseSettingsArray(
+		content: string,
+		varName: string,
+	): Record<string, any> {
+		let settings: Record<string, any> = {};
+		const regex = new RegExp(`const\\s+${varName}\\s*=\\s*\\[`, "m");
 		const match = content.match(regex);
 		if (!match || match.index === undefined) return settings;
 		const startObj = match.index + match[0].length - 1;

@@ -646,17 +646,16 @@ export class GeneratorView extends ItemView {
 					),
 				);
 				// 更新 UI 列表激活状态
-				const usageList = this.containerEl.querySelector(".usage-list");
-				if (usageList) {
-					usageList.findAll(".usage-item").forEach((el) => {
-						el.removeClass("is-active");
-						if (
+				// 页面中有两个 .usage-list，根据 this.type 选择对应的列表
+				// 批量更新激活状态
+				this.containerEl
+					.querySelectorAll<HTMLElement>(".usage-list .usage-item")
+					.forEach((el) => {
+						const isMatch =
 							el.dataset.usage === this.usage &&
-							el.dataset.type === this.type
-						)
-							el.addClass("is-active");
+							el.dataset.type === this.type;
+						el.toggleClass("is-active", isMatch);
 					});
-				}
 				this.renderMiddleColumn();
 			} else {
 				new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
@@ -675,11 +674,11 @@ export class GeneratorView extends ItemView {
 				break;
 			case "Switcher":
 				const switcherResult = ScriptEngine.parseSwitcher(content);
+				console.dir(switcherResult);
 				applyResult({
 					usage: switcherResult.usage ?? undefined,
 					type: switcherResult.type ?? undefined,
 					folderSettings: switcherResult.folderSettings,
-					noteSettings: switcherResult.noteSettings,
 				});
 				break;
 			default:
