@@ -86,18 +86,18 @@ export class ScriptEngine {
 			};
 		}
 
-		const shareFrontMatters = this.parseSettingsObject(
+		const sharedFrontMatters = this.parseSettingsObject(
 			content,
 			"frontMatter",
 		);
 
-		// 如果 shareFrontMatters 中存在 Project 属性，把它删掉
+		// 如果 sharedFrontMatters 中存在 Project 属性，把它删掉
 		if (
-			shareFrontMatters &&
-			typeof shareFrontMatters === "object" &&
-			"Project" in shareFrontMatters
+			sharedFrontMatters &&
+			typeof sharedFrontMatters === "object" &&
+			"Project" in sharedFrontMatters
 		) {
-			delete shareFrontMatters.Project;
+			delete sharedFrontMatters.Project;
 		}
 
 		const switchers = this.parseSettingsArray(content, "switchers");
@@ -115,7 +115,7 @@ export class ScriptEngine {
 			usage,
 			type,
 			folderSettings: {
-				shareFrontMatters,
+				sharedFrontMatters,
 				switchers,
 				useFullPath,
 				defaultTemplateName,
@@ -342,7 +342,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 				case "useFullPath":
 					prefixStr += `const pathMode = ${val}; \nconst prefix = pathMode ? folder : folder.split("/").last();`;
 					break;
-				case "shareFrontMatters":
+				case "sharedFrontMatters":
 					frontmatterStr += `const frontMatter = {\n`;
 					frontmatterStr += '\tProject: \`["${projectName}"]\`,\n';
 					const targetFrontmatter = {};
