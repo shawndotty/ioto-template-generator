@@ -296,6 +296,11 @@ export class GeneratorView extends ItemView {
 		section: string,
 	) {
 		const s = new Setting(container).setName(opt.title || opt.name);
+		s.nameEl.addEventListener("click", () => {
+			this.activeOption = opt;
+			this.renderRightColumn();
+		});
+		s.nameEl.style.cursor = "pointer";
 
 		const handleFocus = (el: HTMLElement) => {
 			this.addFocusListener(el, opt);
@@ -430,6 +435,11 @@ export class GeneratorView extends ItemView {
 		section: string,
 	) {
 		const s = new Setting(container).setName(opt.title || opt.name);
+		s.nameEl.addEventListener("click", () => {
+			this.activeOption = opt;
+			this.renderRightColumn();
+		});
+		s.nameEl.style.cursor = "pointer";
 
 		const handleFocus = (el: HTMLElement) => {
 			this.addFocusListener(el, opt);
