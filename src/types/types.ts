@@ -21,6 +21,7 @@ export interface TemplateOption {
 	valueType: ValueType;
 	description: string;
 	example?: string;
+	imageExplain?: string;
 }
 
 export interface ConfigPreset {
