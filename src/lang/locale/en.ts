@@ -326,7 +326,7 @@ export default {
 	GENERATOR_VIEW_SETTINGS_SUFFIX: "Settings",
 	GENERATOR_VIEW_TAB_FOLDER: "Folder",
 	GENERATOR_VIEW_TAB_NOTE: "Note",
-	GENERATOR_VIEW_TITLE: "Synchronous Script Generator",
+	GENERATOR_VIEW_TITLE: "IOTO Tempate Generator",
 	GENERATOR_VIEW_TOOLTIP_EDIT_ARRAY: "Edit array",
 	GENERATOR_VIEW_TOOLTIP_EDIT_OBJECT: "Edit object",
 	SCRIPT_PREVIEW_BTN_COPY: "Copy to clipboard",

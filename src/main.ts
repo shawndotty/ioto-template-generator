@@ -26,11 +26,11 @@ export default class IOTOTemplateGenerator extends Plugin {
 
 		this.registerView(
 			GENERATOR_VIEW_TYPE,
-			(leaf) => new GeneratorView(leaf, this)
+			(leaf) => new GeneratorView(leaf, this),
 		);
 
 		this.addRibbonIcon(
-			"command",
+			"package",
 			t("MAIN_RIBBON_GENERATOR"),
 			(evt: MouseEvent) => {
 				if (evt.shiftKey) {
@@ -38,11 +38,11 @@ export default class IOTOTemplateGenerator extends Plugin {
 				} else {
 					this.activateView();
 				}
-			}
+			},
 		);
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SettingTab(this.app, this));
+		//this.addSettingTab(new SettingTab(this.app, this));
 	}
 
 	onunload() {}
@@ -87,7 +87,7 @@ export default class IOTOTemplateGenerator extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<IOTOTemplateGeneratorSettings>
+			(await this.loadData()) as Partial<IOTOTemplateGeneratorSettings>,
 		);
 	}
 

@@ -58,7 +58,7 @@ export class GeneratorView extends ItemView {
 	}
 
 	getIcon() {
-		return "arrow-down-up";
+		return "package";
 	}
 
 	async onOpen() {
