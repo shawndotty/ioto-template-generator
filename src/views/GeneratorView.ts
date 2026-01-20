@@ -674,7 +674,6 @@ export class GeneratorView extends ItemView {
 				break;
 			case "Switcher":
 				const switcherResult = ScriptEngine.parseSwitcher(content);
-				console.dir(switcherResult);
 				applyResult({
 					usage: switcherResult.usage ?? undefined,
 					type: switcherResult.type ?? undefined,
@@ -716,6 +715,7 @@ export class GeneratorView extends ItemView {
 	openPresetSaveModal() {
 		const currentSettings = {
 			usage: this.usage,
+			for: this.type,
 			folderSettings: this.folderSettings,
 			noteSettings: this.noteSettings,
 		};
@@ -747,19 +747,21 @@ export class GeneratorView extends ItemView {
 
 	async loadPreset(preset: ConfigPreset) {
 		this.usage = preset.usage;
+		this.type = preset.for;
 		this.folderSettings = { ...preset.folderSettings };
 		this.noteSettings = { ...preset.noteSettings };
 		this.folderSettings = JSON.parse(JSON.stringify(preset.folderSettings)); // Deep copy
 		this.importedFile = null; // Clear imported file context
 
 		// Update UI
-		const platformList = this.containerEl.querySelector(".usage-list");
-		if (platformList) {
-			platformList.findAll(".usage-item").forEach((el) => {
-				el.removeClass("is-active");
-				if (el.textContent === this.usage) el.addClass("is-active");
+		this.containerEl
+			.querySelectorAll<HTMLElement>(".usage-list .usage-item")
+			.forEach((el) => {
+				const isMatch =
+					el.dataset.usage === this.usage &&
+					el.dataset.type === this.type;
+				el.toggleClass("is-active", isMatch);
 			});
-		}
 
 		this.renderMiddleColumn();
 		this.activeOption = null;

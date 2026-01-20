@@ -1,4 +1,4 @@
-export type TemplateType = "Selector" | "Switcher" | "Template";
+export type TemplateType = "Selector" | "Switcher";
 export type Usage = "Input" | "Output" | "Task" | "Outcome" | "Custom";
 export type Level = "Folder" | "Note";
 export type ValueType =
@@ -27,14 +27,16 @@ export interface ConfigPreset {
 	id: string;
 	name: string;
 	usage: Usage;
+	for: TemplateType;
 	folderSettings: Record<string, string>;
-	noteSettings: Record<string, any>;
+	noteSettings?: Record<string, any>;
 	createdAt: number;
 	updatedAt: number;
 }
 
 export interface TemplateGeneratorSettings {
 	usage: Usage;
+	for: TemplateType;
 	folderSettings: Record<string, string>;
-	noteSettings: Record<string, any>;
+	noteSettings?: Record<string, any>;
 }
