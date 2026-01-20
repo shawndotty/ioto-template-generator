@@ -92,7 +92,7 @@ export class GeneratorView extends ItemView {
 		const header = container.createDiv({ cls: "usage-header" });
 		if (!this.platformListCollapsed) {
 			header.createEl("h3", {
-				text: t("GENERATOR_VIEW_PLATFORMS_TITLE"),
+				text: t("GENERATOR_VIEW_USAGE_TITLE"),
 			});
 		}
 		const toggle = header.createEl("button", {
@@ -125,8 +125,10 @@ export class GeneratorView extends ItemView {
 		];
 		types.forEach((t) => {
 			const typeItem = container.createEl("h4", {
-				text: t,
-				cls: "usage-item",
+				text: this.platformListCollapsed ? t.slice(0, 2) : t,
+				cls: this.platformListCollapsed
+					? "usage-type-short"
+					: "usage-type",
 			});
 
 			const list = container.createEl("ul", {
@@ -167,7 +169,7 @@ export class GeneratorView extends ItemView {
 	renderMiddleColumn() {
 		this.middleContainer.empty();
 		this.middleContainer.createEl("h2", {
-			text: `${this.usage} ${t("GENERATOR_VIEW_SETTINGS_SUFFIX")}`,
+			text: `${this.type} - ${this.usage} ${t("GENERATOR_VIEW_SETTINGS_SUFFIX")}`,
 		});
 
 		// Action Bar
@@ -708,6 +710,7 @@ export class GeneratorView extends ItemView {
 			this.app,
 			template,
 			this.usage,
+			this.type,
 			this.importedFile,
 		).open();
 	}

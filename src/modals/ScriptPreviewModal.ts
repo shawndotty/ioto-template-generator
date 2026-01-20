@@ -9,23 +9,28 @@ import { t } from "../lang/helpers";
 export class ScriptPreviewModal extends Modal {
 	private script: string;
 	private usage: string;
+	private type: string;
 	private importedFile: TFile | null;
 
 	constructor(
 		app: App,
 		script: string,
 		usage: string,
+		type: string,
 		importedFile: TFile | null,
 	) {
 		super(app);
 		this.script = script;
 		this.usage = usage;
+		this.type = type;
 		this.importedFile = importedFile;
 	}
 
 	onOpen() {
 		this.modalEl.addClass("mod-script-preview");
-		this.titleEl.setText(t("SCRIPT_PREVIEW_TITLE"));
+		this.titleEl.setText(
+			`${t("SCRIPT_PREVIEW_TITLE")} - ${this.type} - ${this.usage}`,
+		);
 
 		const editorContainer = this.contentEl.createDiv({
 			cls: "script-editor-container",

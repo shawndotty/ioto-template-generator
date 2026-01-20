@@ -108,14 +108,20 @@ export class PresetLoadModal extends Modal {
 					const presetInfo = presetItem.createDiv({
 						cls: "preset-info",
 					});
-					presetInfo.createEl("div", {
-						text: preset.for,
-						cls: "preset-for",
-					});
+
 					presetInfo.createEl("div", {
 						text: preset.name,
 						cls: "preset-name",
 					});
+
+					presetInfo.createEl("span", {
+						text: preset.for,
+						cls: "help-badge",
+						attr: {
+							style: "margin-bottom: 0px;",
+						},
+					});
+
 					presetInfo.createEl("div", {
 						text: new Date(preset.updatedAt).toLocaleDateString(),
 						cls: "preset-date",

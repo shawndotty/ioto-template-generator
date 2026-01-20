@@ -57,7 +57,7 @@ export class PresetSaveModal extends Modal {
 		optionsContainer.addClass("preset-save-options-container");
 
 		const typeDropdown = new DropdownComponent(optionsContainer);
-		typeDropdown.selectEl.style.width = "50%";
+
 		typeDropdown.selectEl.style.marginBottom = "10px";
 		const types: TemplateType[] = ["Selector", "Switcher"];
 
@@ -65,7 +65,7 @@ export class PresetSaveModal extends Modal {
 		typeDropdown.setValue(this.currentSettings.for);
 
 		const usageDropdown = new DropdownComponent(optionsContainer);
-		usageDropdown.selectEl.style.width = "50%";
+
 		usageDropdown.selectEl.style.marginBottom = "10px";
 		const usages: Usage[] = [
 			"Input",

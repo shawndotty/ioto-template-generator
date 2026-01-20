@@ -121,7 +121,7 @@
     font-weight: bold;
 }
 
-.usage-list-collapsed .usage-item {
+.usage-list-collapsed .usage-item, .usage-type-short {
     text-align: center;
     padding: 6px 0;
 }
@@ -516,8 +516,8 @@
 .modal.mod-preset-manager {
     display: flex;
     flex-direction: column;
-    max-width: 840px;
-    width: 640px;
+    max-width: 640px;
+    width: 480px;
     max-height: 80vh;
 }
 
@@ -614,6 +614,13 @@
     justify-content: flex-end;
     margin-top: 8px;
     gap: 10px;
+}
+
+.preset-manager-modal .preset-save-options-container {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    justify-content: space-between;
 }
 
 .setting-item-description.ssg-setting-description {

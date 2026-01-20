@@ -287,7 +287,7 @@ export default {
 	PRESET_MANAGER_NOTICE_SAVED: 'Preset "${name}" has been successfully saved',
 	PRESET_MANAGER_SAVE_BTN: "Save preset",
 	PRESET_MANAGER_SAVE_PLACEHOLDER:
-		'Preset name (for example: "Airtable Production")',
+		'Preset name (for example: "TP-Selector-Input")',
 	PRESET_MANAGER_SAVE_TITLE: "Save current configuration",
 	PRESET_MANAGER_TAB_LOAD: "Load preset",
 	PRESET_MANAGER_TAB_SAVE: "Save Preset",
@@ -321,7 +321,7 @@ export default {
 		"Unable to detect the platform in the template.",
 	GENERATOR_VIEW_NOTICE_TEMPLATE_NOT_FOUND:
 		"Template file not found: ${path}",
-	GENERATOR_VIEW_PLATFORMS_TITLE: "Platform",
+	GENERATOR_VIEW_USAGE_TITLE: "Usage",
 	GENERATOR_VIEW_SETTINGS_SUFFIX: "Settings",
 	GENERATOR_VIEW_TAB_FOLDER: "Folder",
 	GENERATOR_VIEW_TAB_NOTE: "Note",
@@ -336,6 +336,6 @@ export default {
 	SCRIPT_PREVIEW_NOTICE_COPIED: "Copied to clipboard",
 	SCRIPT_PREVIEW_NOTICE_SAVED: "Saved to the database as ${file}",
 	SCRIPT_PREVIEW_NOTICE_UPDATED: "Updated ${path}",
-	SCRIPT_PREVIEW_TITLE: "Generated script",
+	SCRIPT_PREVIEW_TITLE: "Generated Template",
 	MAIN_RIBBON_GENERATOR: "Open Generator",
 };
