@@ -1,6 +1,4 @@
 export default {
-	GENERATOR_VIEW_DEFAULT_LABEL: "Default Value",
-	GENERATOR_VIEW_RESET_TOOLTIP: "Reset to default",
 	ASSIGNED_NOTE_NAME: `Assigned Note Name`,
 	DEFAULT_EXCALIDRAW_TEMPLATE: `Default Excalidraw Template`,
 	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION: `Default New Note Follow Up Action`,
@@ -210,6 +208,8 @@ export default {
 	OUTCOME_DEFAULT_TEMPLATE_EXAMPLE: `My-TP-Outcome-Default-Note`,
 	CUSTOM_DEFAULT_TEMPLATE_EXAMPLE: `My-TP-Custom-Default-Note`,
 
+	// Object Edit
+
 	OBJECT_EDIT_BTN_ADD_ENTRY: "Add entry",
 	OBJECT_EDIT_BTN_CANCEL: "Cancel",
 	OBJECT_EDIT_BTN_SAVE: "Save",
@@ -223,6 +223,9 @@ export default {
 	OBJECT_EDIT_TYPE_BOOLEAN: "Boolean value",
 	OBJECT_EDIT_TYPE_NUMBER: "Number",
 	OBJECT_EDIT_TYPE_STRING: "String",
+
+	// Array Edit
+
 	ARRAY_EDIT_BTN_ADD_ITEM: "Add item",
 	ARRAY_EDIT_BTN_CANCEL: "Cancel",
 	ARRAY_EDIT_BTN_SAVE: "Save",
@@ -231,6 +234,9 @@ export default {
 	ARRAY_EDIT_PLACEHOLDER_VALUE: "Value",
 	ARRAY_EDIT_TITLE: "Edit ${title}",
 	ARRAY_EDIT_TOOLTIP_DELETE: "Delete",
+
+	// Preset Manager
+
 	PRESET_MANAGER_BTN_CLOSE: "Close",
 	PRESET_MANAGER_BTN_DELETE: "Delete",
 	PRESET_MANAGER_BTN_LOAD: "Loading",
@@ -252,6 +258,9 @@ export default {
 	PRESET_MANAGER_TAB_LOAD: "Load preset",
 	PRESET_MANAGER_TAB_SAVE: "Save Preset",
 	PRESET_MANAGER_TITLE: "Preset configuration",
+
+	// Generator View
+
 	GENERATOR_VIEW_BTN_ADD_FOLDER: "Add folder settings",
 	GENERATOR_VIEW_BTN_BROWSE: "Browse",
 	GENERATOR_VIEW_BTN_GENERATE: "Generate Template",
@@ -288,6 +297,11 @@ export default {
 	GENERATOR_VIEW_TITLE: "IOTO Tempate Generator",
 	GENERATOR_VIEW_TOOLTIP_EDIT_ARRAY: "Edit array",
 	GENERATOR_VIEW_TOOLTIP_EDIT_OBJECT: "Edit object",
+	GENERATOR_VIEW_DEFAULT_LABEL: "Default Value",
+	GENERATOR_VIEW_RESET_TOOLTIP: "Reset to default",
+	GENERATOR_VIEW_IMAGE_EXPLAIN_TITLE: "Image Explain",
+
+	// Script Preview
 	SCRIPT_PREVIEW_BTN_COPY: "Copy to clipboard",
 	SCRIPT_PREVIEW_BTN_MAXIMIZE: "Maximize",
 	SCRIPT_PREVIEW_BTN_RESTORE: "Restore",
