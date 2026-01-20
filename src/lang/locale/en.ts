@@ -1,4 +1,6 @@
 export default {
+	GENERATOR_VIEW_DEFAULT_LABEL: "Default Value",
+	GENERATOR_VIEW_RESET_TOOLTIP: "Reset to default",
 	ASSIGNED_NOTE_NAME: `Assigned Note Name`,
 	DEFAULT_EXCALIDRAW_TEMPLATE: `Default Excalidraw Template`,
 	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION: `Default New Note Follow Up Action`,

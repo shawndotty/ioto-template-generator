@@ -686,6 +686,50 @@ export class GeneratorView extends ItemView {
 				cls: "help-desc",
 			});
 
+			// Default Value & Reset
+			const defaultContainer = wrapper.createDiv({
+				cls: "help-default-container",
+			});
+			defaultContainer.createSpan({
+				text: t("GENERATOR_VIEW_DEFAULT_LABEL") + ": ",
+				cls: "help-default-label",
+			});
+
+			const defaultValStr =
+				typeof this.activeOption.defaultValue === "object"
+					? JSON.stringify(this.activeOption.defaultValue)
+					: String(this.activeOption.defaultValue);
+
+			defaultContainer.createEl("code", {
+				text: defaultValStr,
+				cls: "help-default-value",
+			});
+
+			const resetBtn = defaultContainer.createEl("button", {
+				cls: "help-reset-btn",
+				attr: {
+					"aria-label": t("GENERATOR_VIEW_RESET_TOOLTIP"),
+				},
+			});
+			setIcon(resetBtn, "rotate-ccw");
+			resetBtn.onclick = () => {
+				if (!this.activeOption) return;
+
+				const targetSettings =
+					this.activeOption.level === "Note"
+						? this.noteSettings
+						: this.folderSettings;
+
+				let newValue = this.activeOption.defaultValue;
+				if (typeof newValue === "object" && newValue !== null) {
+					newValue = JSON.parse(JSON.stringify(newValue));
+				}
+
+				targetSettings[this.activeOption.name] = newValue;
+				this.renderMiddleColumn();
+				new Notice(t("GENERATOR_VIEW_RESET_TOOLTIP"));
+			};
+
 			if (this.activeOption.example) {
 				wrapper.createEl("h5", {
 					text: t("GENERATOR_VIEW_EXAMPLE_USAGE_TITLE"),

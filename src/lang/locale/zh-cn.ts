@@ -1,1 +1,4 @@
-export default {};
+export default {
+	GENERATOR_VIEW_DEFAULT_LABEL: "默认值",
+	GENERATOR_VIEW_RESET_TOOLTIP: "恢复默认值",
+};
