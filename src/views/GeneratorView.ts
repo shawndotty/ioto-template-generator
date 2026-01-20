@@ -22,6 +22,7 @@ import { ObjectEditModal } from "../modals/ObjectEditModal";
 import { ArrayEditModal } from "../modals/ArrayEditModal";
 import { ScriptEngine } from "../ScriptEngine";
 import { FolderPickerModal } from "../ui/pickers/folder-picker";
+import { FilePickerModal } from "../ui/pickers/file-picker";
 import { PresetLoadModal } from "../modals/PresetLoadModal";
 import { PresetSaveModal } from "../modals/PresetSaveModal";
 import IOTOTemplateGeneratorPlugin from "../main";
@@ -370,6 +371,46 @@ export class GeneratorView extends ItemView {
 				text.inputEl.type = "number";
 				handleFocus(text.inputEl);
 			});
+		} else if (opt.valueType === "path") {
+			s.addText((text) => {
+				text.setPlaceholder(opt.example || "")
+					.setValue(
+						target[opt.name] ||
+							(opt.defaultValue === "" ? "" : opt.defaultValue) ||
+							"",
+					)
+					.onChange((val) => (target[opt.name] = val));
+				handleFocus(text.inputEl);
+			}).addButton((btn) => {
+				btn.setIcon("folder")
+					.setTooltip("Choose a folder")
+					.onClick(() => {
+						new FolderPickerModal(this.app, (selectedFolder) => {
+							target[opt.name] = selectedFolder.path;
+							this.renderMiddleColumn();
+						}).open();
+					});
+			});
+		} else if (opt.valueType === "file") {
+			s.addText((text) => {
+				text.setPlaceholder(opt.example || "")
+					.setValue(
+						target[opt.name] ||
+							(opt.defaultValue === "" ? "" : opt.defaultValue) ||
+							"",
+					)
+					.onChange((val) => (target[opt.name] = val));
+				handleFocus(text.inputEl);
+			}).addButton((btn) => {
+				btn.setIcon("file")
+					.setTooltip("Choose a file")
+					.onClick(() => {
+						new FilePickerModal(this.app, (selectedFile) => {
+							target[opt.name] = selectedFile.basename;
+							this.renderMiddleColumn();
+						}).open();
+					});
+			});
 		} else {
 			s.addText((text) => {
 				text.setValue(
@@ -428,6 +469,7 @@ export class GeneratorView extends ItemView {
 					row.style.alignItems = "center";
 					row.style.gap = "10px";
 					row.style.marginBottom = "8px";
+					row.style.marginRight = "16px";
 					row.style.paddingLeft = "20px";
 
 					// Match Input
@@ -447,6 +489,16 @@ export class GeneratorView extends ItemView {
 						item.template = val;
 					});
 					templateInput.inputEl.style.flex = "1";
+
+					const fileBtn = new ButtonComponent(row);
+					fileBtn.setIcon("file");
+					fileBtn.setTooltip("Choose a file");
+					fileBtn.onClick(() => {
+						new FilePickerModal(this.app, (selectedFile) => {
+							item.template = selectedFile.basename;
+							this.renderMiddleColumn();
+						}).open();
+					});
 
 					// Delete Button
 					const delBtn = new ButtonComponent(row);
@@ -517,6 +569,26 @@ export class GeneratorView extends ItemView {
 						}
 					});
 				handleFocus(text.inputEl);
+			});
+		} else if (opt.valueType === "file") {
+			s.addText((text) => {
+				text.setPlaceholder(opt.example || "")
+					.setValue(
+						target[opt.name] ||
+							(opt.defaultValue === "" ? "" : opt.defaultValue) ||
+							"",
+					)
+					.onChange((val) => (target[opt.name] = val));
+				handleFocus(text.inputEl);
+			}).addButton((btn) => {
+				btn.setIcon("file")
+					.setTooltip("Choose a file")
+					.onClick(() => {
+						new FilePickerModal(this.app, (selectedFile) => {
+							target[opt.name] = selectedFile.basename;
+							this.renderMiddleColumn();
+						}).open();
+					});
 			});
 		} else {
 			s.addText((text) => {
