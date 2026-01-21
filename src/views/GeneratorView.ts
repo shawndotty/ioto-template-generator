@@ -16,6 +16,7 @@ import {
 } from "../types/types";
 import { TEMPLATE_OPTIONS, GENERATOR_VIEW_TYPE } from "../models/constants";
 import { SWITCHERS_TEMPLATE_OPTIONS } from "../models/constantsSwitcher";
+import { ImagePreviewModal } from "../modals/ImagePreviewModal";
 import { ImportModal } from "../modals/ImportModal";
 import { ScriptPreviewModal } from "../modals/ScriptPreviewModal";
 import { ObjectEditModal } from "../modals/ObjectEditModal";
@@ -739,6 +740,22 @@ export class GeneratorView extends ItemView {
 					text: this.activeOption.example,
 					cls: "help-example",
 				});
+			}
+
+			if (this.activeOption.imageExplain) {
+				wrapper.createEl("h5", {
+					text: t("GENERATOR_VIEW_IMAGE_EXPLAIN_TITLE"),
+				});
+				const imageUrl = this.activeOption.imageExplain;
+				const img = wrapper.createEl("img", {
+					attr: {
+						src: imageUrl,
+					},
+					cls: "help-image-explain",
+				});
+				img.onclick = () => {
+					new ImagePreviewModal(this.app, imageUrl).open();
+				};
 			}
 		} else {
 			this.rightContainer.createEl("p", {

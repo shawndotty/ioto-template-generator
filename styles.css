@@ -678,3 +678,39 @@
     background-color: var(--background-modifier-hover);
     color: var(--text-normal);
 }
+
+/* Image Preview Modal */
+.image-preview-modal {
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+    width: auto !important;
+    height: auto !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-preview-modal .modal-close-button {
+    display: none; /* Hide default close button as clicking outside closes it */
+}
+
+.image-preview-container img {
+    border-radius: 8px;
+    cursor: zoom-out;
+}
+
+.help-image-explain {
+    max-width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--background-modifier-border);
+    margin-top: 10px;
+    cursor: zoom-in;
+    transition: transform 0.2s;
+}
+
+.help-image-explain:hover {
+    opacity: 0.9;
+}
