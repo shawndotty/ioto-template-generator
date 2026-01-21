@@ -16,7 +16,7 @@ export default {
 	OUTCOME_PROJECT_DEFAULT_SUB_FOLDERS: `Outcome Project Default Sub Folders`,
 	PROJECT_NAME_FORMAT: `Project Name Format`,
 	SHOW_BASE_PATH_IN_OPTION: `Show Base Path In Option`,
-	SHOW_OPTION_ORDER: `Show Option Order`,
+	SHOW_OPTION_ORDER: `Display the Numerical Order of Options`,
 	TASK_FOLDER: `Task Folder`,
 	TEMPLATE: `Template`,
 	TIMESTAMP_FORMAT: `Timestamp Format`,
@@ -296,4 +296,8 @@ export default {
 	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_2: `Open Note`,
 	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_3: `Insert Link and Open Note`,
 	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_4: `Do Nothing`,
+	Selector: "Selector",
+	Switcher: "Switcher",
+	FULL_OR_PARTIAL_FOLDER_NAME: `Full or partial folder name`,
+	TEMPLATE_FILE_NAME: `Template file name`,
 };

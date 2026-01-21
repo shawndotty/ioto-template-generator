@@ -125,9 +125,11 @@ export class GeneratorView extends ItemView {
 			"Outcome",
 			"Custom",
 		];
-		types.forEach((t) => {
+		types.forEach((type) => {
 			const typeItem = container.createEl("h4", {
-				text: this.platformListCollapsed ? t.slice(0, 2) : t,
+				text: this.platformListCollapsed
+					? t(`${type}`).slice(0, 2)
+					: t(`${type}`),
 				cls: this.platformListCollapsed
 					? "usage-type-short"
 					: "usage-type",
@@ -143,13 +145,13 @@ export class GeneratorView extends ItemView {
 				const item = list.createEl("li", {
 					text: label,
 					cls: "usage-item",
-					attr: { "data-type": t, "data-usage": u },
+					attr: { "data-type": type, "data-usage": u },
 				});
-				if (u === this.usage && t === this.type)
+				if (u === this.usage && type === this.type)
 					item.addClass("is-active");
 
 				item.onclick = () => {
-					this.type = t;
+					this.type = type;
 					this.usage = u;
 					// Reset imported file context when switching usages manually
 					this.importedFile = null;
@@ -171,7 +173,7 @@ export class GeneratorView extends ItemView {
 	renderMiddleColumn() {
 		this.middleContainer.empty();
 		this.middleContainer.createEl("h2", {
-			text: `${this.type} - ${this.usage} ${t("GENERATOR_VIEW_SETTINGS_SUFFIX")}`,
+			text: `${t(this.type)} - ${this.usage} ${t("GENERATOR_VIEW_SETTINGS_SUFFIX")}`,
 		});
 
 		// Action Bar
@@ -496,7 +498,7 @@ export class GeneratorView extends ItemView {
 
 					// Match Input
 					const matchInput = new TextComponent(row);
-					matchInput.setPlaceholder("Match");
+					matchInput.setPlaceholder(t("FULL_OR_PARTIAL_FOLDER_NAME"));
 					matchInput.setValue(item.match || "");
 					matchInput.onChange((val) => {
 						item.match = val;
@@ -505,7 +507,7 @@ export class GeneratorView extends ItemView {
 
 					// Template Input
 					const templateInput = new TextComponent(row);
-					templateInput.setPlaceholder("Template");
+					templateInput.setPlaceholder(t("TEMPLATE_FILE_NAME"));
 					templateInput.setValue(item.template || "");
 					templateInput.onChange((val) => {
 						item.template = val;
