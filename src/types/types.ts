@@ -19,6 +19,8 @@ export interface TemplateOption {
 	level: Level;
 	defaultValue: any;
 	valueType: ValueType;
+	asSelector?: boolean;
+	choices?: { label: string; value: any }[];
 	description: string;
 	example?: string;
 	imageExplain?: string;

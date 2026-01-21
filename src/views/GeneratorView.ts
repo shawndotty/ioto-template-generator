@@ -360,23 +360,34 @@ export class GeneratorView extends ItemView {
 				handleFocus(text.inputEl);
 			});
 		} else if (opt.valueType === "integer") {
-			s.addText((text) => {
-				text.setValue(
-					target[opt.name].toString() ||
-						(opt.defaultValue === ""
-							? ""
-							: opt.defaultValue.toString()) ||
-						"",
-				).onChange((val) => {
-					// 只允许输入数字
-					if (/^\d*$/.test(val)) {
-						target[opt.name] = val;
-					}
+			if (opt.asSelector) {
+				s.addDropdown((dropdown) => {
+					opt.choices?.forEach((choice) => {
+						dropdown.addOption(choice.value, choice.label);
+					});
+					dropdown.setValue(target[opt.name] || opt.defaultValue);
+					dropdown.onChange((val) => (target[opt.name] = val));
+					handleFocus(dropdown.selectEl);
 				});
-				// 设置输入类型为数字
-				text.inputEl.type = "number";
-				handleFocus(text.inputEl);
-			});
+			} else {
+				s.addText((text) => {
+					text.setValue(
+						target[opt.name].toString() ||
+							(opt.defaultValue === ""
+								? ""
+								: opt.defaultValue.toString()) ||
+							"",
+					).onChange((val) => {
+						// 只允许输入数字
+						if (/^\d*$/.test(val)) {
+							target[opt.name] = val;
+						}
+					});
+					// 设置输入类型为数字
+					text.inputEl.type = "number";
+					handleFocus(text.inputEl);
+				});
+			}
 		} else if (opt.valueType === "path") {
 			s.addText((text) => {
 				text.setPlaceholder(opt.example || "")

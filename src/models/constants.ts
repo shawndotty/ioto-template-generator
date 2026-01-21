@@ -173,6 +173,29 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 5,
 		level: "Note",
 		valueType: "integer",
+		asSelector: true,
+		choices: [
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_0"),
+				value: 0,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_1"),
+				value: 1,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_2"),
+				value: 2,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_3"),
+				value: 3,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_4"),
+				value: 4,
+			},
+		],
 		defaultValue: 1,
 		description: t("INPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC"),
 		example: t("INPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE"),
@@ -186,6 +209,29 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 5,
 		level: "Note",
 		valueType: "integer",
+		asSelector: true,
+		choices: [
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_0"),
+				value: 0,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_1"),
+				value: 1,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_2"),
+				value: 2,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_3"),
+				value: 3,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_4"),
+				value: 4,
+			},
+		],
 		defaultValue: 1,
 		description: t("OUTPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC"),
 		example: t("OUTPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE"),
@@ -200,6 +246,29 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Note",
 		valueType: "integer",
 		defaultValue: 1,
+		asSelector: true,
+		choices: [
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_0"),
+				value: 0,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_1"),
+				value: 1,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_2"),
+				value: 2,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_3"),
+				value: 3,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_4"),
+				value: 4,
+			},
+		],
 		description: t("OUTCOME_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC"),
 		example: t("OUTCOME_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
@@ -213,6 +282,29 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Note",
 		valueType: "integer",
 		defaultValue: 1,
+		asSelector: true,
+		choices: [
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_0"),
+				value: 0,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_1"),
+				value: 1,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_2"),
+				value: 2,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_3"),
+				value: 3,
+			},
+			{
+				label: t("DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_4"),
+				value: 4,
+			},
+		],
 		description: t("CUSTOM_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC"),
 		example: t("CUSTOM_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
