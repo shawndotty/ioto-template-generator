@@ -12,11 +12,11 @@ export const IOTO_VARIABLES = {
 };
 
 export const IOTO_NOTE_TEMPLATES = {
-	input: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultInputNoteTemplate"), false);`,
-	output: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultOutputNoteTemplate"), false);`,
-	task: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultTaskNoteTemplate"), false);`,
-	outcome: `const noteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultOutcomeNoteTemplate"), false);`,
-	custom: `const noteTemplate = ""`,
+	input: `const switcherTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultInputSwitcherTemplate"), false);`,
+	output: `const switcherTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultOutputSwitcherTemplate"), false);`,
+	task: `const switcherTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultTaskSwitcherTemplate"), false);`,
+	outcome: `const switcherTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefaultOutcomeSwitcherTemplate"), false);`,
+	custom: `const switcherTemplate = ""`,
 };
 
 export const IOTO_ML = `const ml = new (tp.user.IOTOMultiLangs(tp))(tp);`;
@@ -173,6 +173,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 5,
 		level: "Note",
 		valueType: "integer",
+		defaultValue: 1,
 		asSelector: true,
 		choices: [
 			{
@@ -196,7 +197,6 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 				value: 4,
 			},
 		],
-		defaultValue: 1,
 		description: t("INPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC"),
 		example: t("INPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
@@ -209,6 +209,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 5,
 		level: "Note",
 		valueType: "integer",
+		defaultValue: 1,
 		asSelector: true,
 		choices: [
 			{
@@ -232,7 +233,6 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 				value: 4,
 			},
 		],
-		defaultValue: 1,
 		description: t("OUTPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_DESC"),
 		example: t("OUTPUT_DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
@@ -932,7 +932,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 1,
 		level: "Note",
 		valueType: "file",
-		defaultValue: "${noteTemplate}",
+		defaultValue: "${switcherTemplate}",
 		description: t("INPUT_TEMPLATE_DESC"),
 		example: t("INPUT_TEMPLATE_EXAMPLE"),
 		imageExplain: "",
@@ -945,7 +945,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 1,
 		level: "Note",
 		valueType: "file",
-		defaultValue: "${noteTemplate}",
+		defaultValue: "${switcherTemplate}",
 		description: t("OUTPUT_TEMPLATE_DESC"),
 		example: t("OUTPUT_TEMPLATE_EXAMPLE"),
 		imageExplain: "",
@@ -958,7 +958,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 1,
 		level: "Note",
 		valueType: "file",
-		defaultValue: "${noteTemplate}",
+		defaultValue: "${switcherTemplate}",
 		description: t("OUTCOME_TEMPLATE_DESC"),
 		example: t("OUTCOME_TEMPLATE_EXAMPLE"),
 		imageExplain: "",
@@ -971,7 +971,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 1,
 		level: "Note",
 		valueType: "file",
-		defaultValue: "${noteTemplate}",
+		defaultValue: "${switcherTemplate}",
 		description: t("TASK_TEMPLATE_DESC"),
 		example: t("TASK_TEMPLATE_EXAMPLE"),
 		imageExplain: "",

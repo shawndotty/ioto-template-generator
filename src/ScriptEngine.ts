@@ -283,6 +283,7 @@ if(noteSettings.addLinkToTDL) {
 			case "input":
 			case "output":
 				header = `
+const ml = new (tp.user.IOTOMultiLangs(tp))(tp);
 const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
@@ -290,6 +291,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 				break;
 			case "outcome":
 				header = `
+const ml = new (tp.user.IOTOMultiLangs(tp))(tp);
 const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
@@ -298,6 +300,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 				break;
 			case "task":
 				header = `
+const ml = new (tp.user.IOTOMultiLangs(tp))(tp);
 const {LTDListInputSectionHeading, LTDListOutputSectionHeading, LTDListOutcomeSectionHeading, defaultTDLDateFormat, projectNameFormat, defaultTDLHeadingLevel} = app.plugins.plugins["ioto-settings"].settings;
 const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
@@ -382,7 +385,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 					defaultTemplate = val;
 					defaultInclude = defaultTemplate
 						? `(await tp.file.include(\`[[${defaultTemplate}]]\`))`
-						: `""`;
+						: `defaultNoteTemplate`;
 					break;
 
 				default:
@@ -399,9 +402,10 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 		const footer = `
 const matched = switchers.find(item => prefix.includes(item.match));
 let includeNote = "";
+const defaultNoteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefault${usage}NoteTemplate"))
 if (matched) {
-	includedNote = (await tp.file.include(\`[[\${matched.template}]]\`)) || "";
-    
+	const matchedTemplate = tp.file.find_tfile(matched.template);
+	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
 } else {
 	includedNote = ${defaultInclude};
 }
