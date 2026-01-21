@@ -865,6 +865,7 @@ export class GeneratorView extends ItemView {
 		}
 		new ScriptPreviewModal(
 			this.app,
+			this.plugin.settings,
 			template,
 			this.usage,
 			this.type,
@@ -941,11 +942,11 @@ export class GeneratorView extends ItemView {
 			Usage,
 			keyof typeof this.plugin.settings
 		> = {
-			Input: "defaultInputTemplatePath",
-			Output: "defaultOutputTemplatePath",
-			Task: "defaultTaskTemplatePath",
-			Outcome: "defaultOutcomeTemplatePath",
-			Custom: "defaultCustomTemplatePath",
+			Input: "defaultInputSelectorPath",
+			Output: "defaultOutputSelectorPath",
+			Task: "defaultTaskSelectorPath",
+			Outcome: "defaultOutcomeSelectorPath",
+			Custom: "defaultCustomSelectorPath",
 		};
 
 		const key = useageSettingsMap[this.usage];

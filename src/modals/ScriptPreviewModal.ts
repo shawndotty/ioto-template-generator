@@ -5,15 +5,18 @@ import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { defaultKeymap } from "@codemirror/commands";
 import { t } from "../lang/helpers";
+import { IOTOTemplateGeneratorSettings } from "../settings";
 
 export class ScriptPreviewModal extends Modal {
 	private script: string;
 	private usage: string;
 	private type: string;
 	private importedFile: TFile | null;
+	private settings: IOTOTemplateGeneratorSettings;
 
 	constructor(
 		app: App,
+		settings: IOTOTemplateGeneratorSettings,
 		script: string,
 		usage: string,
 		type: string,
@@ -24,6 +27,7 @@ export class ScriptPreviewModal extends Modal {
 		this.usage = usage;
 		this.type = type;
 		this.importedFile = importedFile;
+		this.settings = settings;
 	}
 
 	onOpen() {
@@ -98,7 +102,13 @@ export class ScriptPreviewModal extends Modal {
 							const fileName = `TP-${
 								this.usage
 							}-${Date.now()}.md`;
-							await this.app.vault.create(fileName, content);
+							const folderPath =
+								this.usage === "selector"
+									? this.settings.selectorFolderPath || ""
+									: this.settings.switcherFolderPath || "";
+							const filePath = `${folderPath}/${fileName}`;
+
+							await this.app.vault.create(filePath, content);
 							new Notice(
 								t("SCRIPT_PREVIEW_NOTICE_SAVED").replace(
 									"${file}",

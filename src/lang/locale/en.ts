@@ -304,4 +304,16 @@ export default {
 	OUTPUT_NOTE_DEFAULT_TEMPLATE: `My-TP-Output-Note-Default-Template`,
 	TASK_NOTE_DEFAULT_TEMPLATE: `My-TP-Task-Note-Default-Template`,
 	OUTCOME_NOTE_DEFAULT_TEMPLATE: `My-TP-Outcome-Note-Default-Template`,
+
+	BASIC_SETTINGS: "Basic",
+	SETTINGS_SELECTORS_TITLE: "Selector",
+	SETTINGS_SWITCHERS_TITLE: "Switcher",
+	SETTINGS_SELECTORS_FOLDER_TITLE: "Selector Folder",
+	SETTINGS_SELECTORS_FOLDER_DESC:
+		"The folder path you want to sync selectors.",
+	SETTINGS_SELECTORS_FOLDER_PLACEHOLDER: "Example: Templater/Selectors",
+	SETTINGS_SWITCHERS_FOLDER_TITLE: "Switcher Folder",
+	SETTINGS_SWITCHERS_FOLDER_DESC:
+		"The folder path you want to sync switchers.",
+	SETTINGS_SWITCHERS_FOLDER_PLACEHOLDER: "Example: Templater/Switchers",
 };
