@@ -9,7 +9,21 @@ export type ValueType =
 	| "file"
 	| "integer"
 	| "path";
-
+declare module "obsidian" {
+	interface App {
+		commands: {
+			executeCommandById(id: string): void;
+		};
+		plugins: {
+			plugins: {
+				[key: string]: any;
+			};
+		};
+		dom: {
+			appContainerEl: HTMLElement;
+		};
+	}
+}
 export interface TemplateOption {
 	name: string;
 	title: string;

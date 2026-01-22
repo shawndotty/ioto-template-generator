@@ -13,6 +13,7 @@ export class ScriptPreviewModal extends Modal {
 	private type: string;
 	private importedFile: TFile | null;
 	private settings: IOTOTemplateGeneratorSettings;
+	private prefix: string;
 
 	constructor(
 		app: App,
@@ -28,6 +29,9 @@ export class ScriptPreviewModal extends Modal {
 		this.type = type;
 		this.importedFile = importedFile;
 		this.settings = settings;
+		this.prefix =
+			this.app.plugins.plugins["ioto-settings"].settings
+				.userTemplatePrefix || "";
 	}
 
 	onOpen() {
@@ -99,11 +103,22 @@ export class ScriptPreviewModal extends Modal {
 								),
 							);
 						} else {
-							const fileName = `TP-${
-								this.usage
-							}-${Date.now()}.md`;
+							let fileName = "";
+							const templateUsage = t(
+								this.usage as
+									| "Input"
+									| "Output"
+									| "Task"
+									| "Outcome"
+									| "Custom",
+							);
+							if (this.type === "Selector") {
+								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${t("Selector")}-${templateUsage}-${t("Create") + templateUsage}-${Date.now()}.md`;
+							} else {
+								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${templateUsage}-${t("Switcher")}-${t("Create")}${this.usage === "Task" ? t("TaskList") : templateUsage + t("Note")}-${Date.now()}.md`;
+							}
 							const folderPath =
-								this.usage === "selector"
+								this.type === "Selector"
 									? this.settings.selectorFolderPath || ""
 									: this.settings.switcherFolderPath || "";
 							const filePath = `${folderPath}/${fileName}`;

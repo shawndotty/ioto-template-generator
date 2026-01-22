@@ -185,7 +185,7 @@ export class GeneratorView extends ItemView {
 			.onClick(() => this.openImportModal());
 
 		// Load Default Template button (only show if default template is set)
-		const defaultTemplatePath = this.getDefaultTemplatePath();
+		const defaultTemplatePath = this.getDefaultTemplatePath(this.type);
 		if (defaultTemplatePath) {
 			new ButtonComponent(actionBar)
 				.setButtonText(t("GENERATOR_VIEW_BTN_LOAD_DEFAULT"))
@@ -786,6 +786,8 @@ export class GeneratorView extends ItemView {
 		const content = await this.app.vault.read(file);
 		this.importedFile = file;
 
+		console.dir(this.importedFile);
+
 		// 提取公共逻辑
 		const applyResult = (result: {
 			usage?: Usage;
@@ -937,8 +939,8 @@ export class GeneratorView extends ItemView {
 		await this.plugin.saveSettings();
 	}
 
-	private getDefaultTemplatePath(): string {
-		const useageSettingsMap: Record<
+	private getDefaultTemplatePath(type: TemplateType): string {
+		const selectorUseageSettingsMap: Record<
 			Usage,
 			keyof typeof this.plugin.settings
 		> = {
@@ -949,13 +951,27 @@ export class GeneratorView extends ItemView {
 			Custom: "defaultCustomSelectorPath",
 		};
 
-		const key = useageSettingsMap[this.usage];
+		const switcherUseageSettingsMap: Record<
+			Usage,
+			keyof typeof this.plugin.settings
+		> = {
+			Input: "defaultInputSwitcherPath",
+			Output: "defaultOutputSwitcherPath",
+			Task: "defaultTaskSwitcherPath",
+			Outcome: "defaultOutcomeSwitcherPath",
+			Custom: "defaultCustomSwitcherPath",
+		};
+
+		const key =
+			type === "Selector"
+				? selectorUseageSettingsMap[this.usage]
+				: switcherUseageSettingsMap[this.usage];
 		const path = (this.plugin.settings[key] as string) || "";
 		return path.trim();
 	}
 
 	async loadDefaultTemplate() {
-		const templatePath = this.getDefaultTemplatePath();
+		const templatePath = this.getDefaultTemplatePath(this.type);
 		if (!templatePath) {
 			new Notice(t("GENERATOR_VIEW_NOTICE_NO_DEFAULT"));
 			return;

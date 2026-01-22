@@ -280,6 +280,7 @@ export default {
 	GENERATOR_VIEW_TOOLTIP_EDIT_OBJECT: `Edit object`,
 	GENERATOR_VIEW_DEFAULT_LABEL: `Default Value`,
 	GENERATOR_VIEW_RESET_TOOLTIP: `Reset to default`,
+	PICKER_NO_FILES_FOUND: "No files found",
 	GENERATOR_VIEW_IMAGE_EXPLAIN_TITLE: `Image Explain`,
 	SCRIPT_PREVIEW_BTN_COPY: `Copy to clipboard`,
 	SCRIPT_PREVIEW_BTN_MAXIMIZE: `Maximize`,
@@ -316,4 +317,12 @@ export default {
 	SETTINGS_SWITCHERS_FOLDER_DESC:
 		"The folder path you want to sync switchers.",
 	SETTINGS_SWITCHERS_FOLDER_PLACEHOLDER: "Example: Templater/Switchers",
+	Input: "Input",
+	Output: "Output",
+	Task: "Task",
+	Outcome: "Outcome",
+	Custom: "Custom",
+	Create: "Create",
+	TaskList: "TDL",
+	Note: "Note",
 };
