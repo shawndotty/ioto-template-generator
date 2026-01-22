@@ -613,7 +613,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		title: t("NOTE_NAME_PREFIX"),
 		type: "Selector",
 		for: "Custom",
-		order: 4,
+		order: 3,
 		level: "Note",
 		valueType: "string",
 		defaultValue: "",
