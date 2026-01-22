@@ -280,7 +280,7 @@ export default {
 	GENERATOR_VIEW_TOOLTIP_EDIT_OBJECT: `Edit object`,
 	GENERATOR_VIEW_DEFAULT_LABEL: `Default Value`,
 	GENERATOR_VIEW_RESET_TOOLTIP: `Reset to default`,
-	PICKER_NO_FILES_FOUND: "No files found",
+
 	GENERATOR_VIEW_IMAGE_EXPLAIN_TITLE: `Image Explain`,
 	SCRIPT_PREVIEW_BTN_COPY: `Copy to clipboard`,
 	SCRIPT_PREVIEW_BTN_MAXIMIZE: `Maximize`,
@@ -325,4 +325,6 @@ export default {
 	Create: "Create",
 	TaskList: "TDL",
 	Note: "Note",
+	PICKER_NO_FILES_FOUND: "No files found",
+	PICKER_NO_FOLDERS_FOUND: "No folders found",
 };

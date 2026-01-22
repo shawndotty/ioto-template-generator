@@ -131,13 +131,17 @@ export class SettingTab extends PluginSettingTab {
 					.setIcon("folder")
 					.setTooltip("Choose a folder")
 					.onClick(() => {
-						new FolderPickerModal(this.app, async (folder) => {
-							this.plugin.settings.selectorFolderPath =
-								folder.path;
-							await this.plugin.saveSettings();
-							this.currentTabIndex = 0;
-							this.display();
-						}).open();
+						new FolderPickerModal(
+							this.app,
+							async (folder) => {
+								this.plugin.settings.selectorFolderPath =
+									folder.path;
+								await this.plugin.saveSettings();
+								this.currentTabIndex = 0;
+								this.display();
+							},
+							["MyIOTO", "Templates", "Templater"],
+						).open();
 					}),
 			);
 
@@ -158,13 +162,17 @@ export class SettingTab extends PluginSettingTab {
 					.setIcon("folder")
 					.setTooltip("Choose a folder")
 					.onClick(() => {
-						new FolderPickerModal(this.app, async (folder) => {
-							this.plugin.settings.switcherFolderPath =
-								folder.path;
-							await this.plugin.saveSettings();
-							this.currentTabIndex = 0;
-							this.display();
-						}).open();
+						new FolderPickerModal(
+							this.app,
+							async (folder) => {
+								this.plugin.settings.switcherFolderPath =
+									folder.path;
+								await this.plugin.saveSettings();
+								this.currentTabIndex = 0;
+								this.display();
+							},
+							["MyIOTO", "Templates", "Templater"],
+						).open();
 					}),
 			);
 	}
