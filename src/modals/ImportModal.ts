@@ -12,7 +12,9 @@ export class ImportModal extends FuzzySuggestModal<TFile> {
 	) {
 		super(app);
 		this.onChoose = onChoose;
-		this.filterString.push(...(extraFilter || []));
+		if (extraFilter) {
+			this.filterString = [...this.filterString, ...extraFilter];
+		}
 	}
 
 	getItems(): TFile[] {

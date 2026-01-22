@@ -309,6 +309,7 @@ const projectName = await tp.user.IOTOCreateProjectName(tp.file.folder(true), pr
 				break;
 			case "custom":
 				header = `
+const ml = new (tp.user.IOTOMultiLangs(tp))(tp);
 const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
