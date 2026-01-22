@@ -21,7 +21,7 @@ import { ImportModal } from "../modals/ImportModal";
 import { ScriptPreviewModal } from "../modals/ScriptPreviewModal";
 import { ObjectEditModal } from "../modals/ObjectEditModal";
 import { ArrayEditModal } from "../modals/ArrayEditModal";
-import { ScriptEngine } from "../ScriptEngine";
+import { ScriptEngine } from "../processors/ScriptEngine";
 import { FolderPickerModal } from "../ui/pickers/folder-picker";
 import { FilePickerModal } from "../ui/pickers/file-picker";
 import { PresetLoadModal } from "../modals/PresetLoadModal";

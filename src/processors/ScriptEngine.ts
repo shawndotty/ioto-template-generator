@@ -1,12 +1,12 @@
-import { Usage, TemplateType } from "./types/types";
+import { Usage, TemplateType } from "../types/types";
 import {
 	TEMPLATE_OPTIONS,
 	IOTO_VARIABLES,
 	IOTO_NOTE_TEMPLATES,
 	IOTO_ML,
-} from "./models/constants";
+} from "../models/constants";
 
-import { SWITCHERS_TEMPLATE_OPTIONS } from "./models/constantsSwitcher";
+import { SWITCHERS_TEMPLATE_OPTIONS } from "../models/constantsSwitcher";
 import { Notice } from "obsidian";
 
 export class ScriptEngine {
