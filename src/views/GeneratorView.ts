@@ -424,10 +424,14 @@ export class GeneratorView extends ItemView {
 				btn.setIcon("file")
 					.setTooltip("Choose a file")
 					.onClick(() => {
-						new FilePickerModal(this.app, (selectedFile) => {
-							target[opt.name] = selectedFile.basename;
-							this.renderMiddleColumn();
-						}).open();
+						new FilePickerModal(
+							this.app,
+							(selectedFile) => {
+								target[opt.name] = selectedFile.basename;
+								this.renderMiddleColumn();
+							},
+							["MyIOTO", "Templates", "Templater", t(this.usage)],
+						).open();
 					});
 			});
 		} else {
@@ -518,10 +522,14 @@ export class GeneratorView extends ItemView {
 					fileBtn.setIcon("file");
 					fileBtn.setTooltip("Choose a file");
 					fileBtn.onClick(() => {
-						new FilePickerModal(this.app, (selectedFile) => {
-							item.template = selectedFile.basename;
-							this.renderMiddleColumn();
-						}).open();
+						new FilePickerModal(
+							this.app,
+							(selectedFile) => {
+								item.template = selectedFile.basename;
+								this.renderMiddleColumn();
+							},
+							["MyIOTO", "Templates", "Templater", t(this.usage)],
+						).open();
 					});
 
 					// Delete Button
@@ -608,10 +616,14 @@ export class GeneratorView extends ItemView {
 				btn.setIcon("file")
 					.setTooltip("Choose a file")
 					.onClick(() => {
-						new FilePickerModal(this.app, (selectedFile) => {
-							target[opt.name] = selectedFile.basename;
-							this.renderMiddleColumn();
-						}).open();
+						new FilePickerModal(
+							this.app,
+							(selectedFile) => {
+								target[opt.name] = selectedFile.basename;
+								this.renderMiddleColumn();
+							},
+							["MyIOTO", "Templates", "Templater", t(this.usage)],
+						).open();
 					});
 			});
 		} else {
@@ -779,7 +791,10 @@ export class GeneratorView extends ItemView {
 	}
 
 	openImportModal() {
-		new ImportModal(this.app, (file) => this.importTemplate(file)).open();
+		new ImportModal(this.app, (file) => this.importTemplate(file), [
+			t(this.usage),
+			t(this.type),
+		]).open();
 	}
 
 	async importTemplate(file: TFile) {

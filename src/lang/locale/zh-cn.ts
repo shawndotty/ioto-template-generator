@@ -309,6 +309,6 @@ export default {
 	Create: "创建",
 	TaskList: "任务列表",
 	Note: "笔记",
-	PICKER_NO_FILES_FOUND: "没有找到任何文件",
-	PICKER_NO_FOLDERS_FOUND: "没有找到任何文件夹",
+	PICKER_NO_FILES_FOUND: "没有找到符合条件的文件",
+	PICKER_NO_FOLDERS_FOUND: "没有找到符合条件的文件夹",
 };
