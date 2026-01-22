@@ -384,6 +384,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 
 				case "defaultTemplate":
 					defaultTemplate = val;
+					console.log(defaultTemplate);
 					defaultInclude = defaultTemplate
 						? `(await tp.file.include(\`[[${defaultTemplate}]]\`))`
 						: `defaultNoteTemplate`;
@@ -403,7 +404,10 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 		const footer = `
 const matched = switchers.find(item => prefix.includes(item.match));
 let includeNote = "";
-const defaultNoteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefault${usage}NoteTemplate"))
+let defaultNoteTemplate = "";
+if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
+	defaultNoteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefault${usage}NoteTemplate"))
+}
 if (matched) {
 	const matchedTemplate = tp.file.find_tfile(matched.template);
 	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 

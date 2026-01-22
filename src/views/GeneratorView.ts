@@ -801,8 +801,6 @@ export class GeneratorView extends ItemView {
 		const content = await this.app.vault.read(file);
 		this.importedFile = file;
 
-		console.dir(this.importedFile);
-
 		// 提取公共逻辑
 		const applyResult = (result: {
 			usage?: Usage;
