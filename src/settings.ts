@@ -206,15 +206,13 @@ export class SettingTab extends PluginSettingTab {
 			const currentValue = this.getSelectorSetting(templateType);
 			new Setting(content)
 				.setName(
-					`${templateType} ${t("SETTINGS_SELECTORS_FOLDER_TITLE")}`,
+					`${t(templateType as any)}-${t("SETTINGS_SELECTORS_DEFAULT_TEMPLATE_TITLE")}`,
 				)
-				.setDesc(
-					`${templateType} ${t("SETTINGS_SELECTORS_FOLDER_DESC")}`,
-				)
+				.setDesc(`${t("SETTINGS_SELECTORS_DEFAULT_TEMPLATE_DESC")}`)
 				.addText((text) =>
 					text
 						.setPlaceholder(
-							`${templateType} ${t("SETTINGS_SELECTORS_FOLDER_PLACEHOLDER")}`,
+							`${t("SETTINGS_SELECTORS_DEFAULT_TEMPLATE_PLACEHOLDER")}`,
 						)
 						.setValue(currentValue)
 						.onChange(async (value) => {
@@ -251,15 +249,13 @@ export class SettingTab extends PluginSettingTab {
 			const currentValue = this.getSwitcherSetting(templateType);
 			new Setting(content)
 				.setName(
-					`${templateType} ${t("SETTINGS_SWITCHERS_FOLDER_TITLE")}`,
+					`${t(templateType as any)}-${t("SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_TITLE")}`,
 				)
-				.setDesc(
-					`${templateType} ${t("SETTINGS_SWITCHERS_FOLDER_DESC")}`,
-				)
+				.setDesc(`${t("SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_DESC")}`)
 				.addText((text) =>
 					text
 						.setPlaceholder(
-							`${templateType} ${t("SETTINGS_SWITCHERS_FOLDER_PLACEHOLDER")}`,
+							`${t("SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_PLACEHOLDER")}`,
 						)
 						.setValue(currentValue)
 						.onChange(async (value) => {
