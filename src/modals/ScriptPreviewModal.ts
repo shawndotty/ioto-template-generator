@@ -113,7 +113,7 @@ export class ScriptPreviewModal extends Modal {
 									| "Custom",
 							);
 							if (this.type === "Selector") {
-								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${t("Selector")}-${templateUsage}-${t("Create") + templateUsage}-${Date.now()}.md`;
+								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${t("Selector")}-${t("Create") + templateUsage}-${Date.now()}.md`;
 							} else {
 								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${templateUsage}-${t("Switcher")}-${t("Create")}${this.usage === "Task" ? t("TaskList") : templateUsage + t("Note")}-${Date.now()}.md`;
 							}
