@@ -6,6 +6,7 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { defaultKeymap } from "@codemirror/commands";
 import { t } from "../lang/helpers";
 import { IOTOTemplateGeneratorSettings } from "../settings";
+import { GENERATOR_VIEW_TYPE } from "../models/constants";
 
 export class ScriptPreviewModal extends Modal {
 	private script: string;
@@ -138,9 +139,92 @@ export class ScriptPreviewModal extends Modal {
 							);
 						}
 						this.close();
+
 						if (this.type === "Selector") {
-							const switherTemplate =
+							const switcherTemplateName =
 								this.noteSettings?.template || "";
+							console.log(switcherTemplateName);
+							if (switcherTemplateName) {
+								const existingFile =
+									this.app.metadataCache.getFirstLinkpathDest(
+										switcherTemplateName,
+										"",
+									);
+								if (!existingFile) {
+									const switcherFolderPath =
+										this.settings.switcherFolderPath || "";
+
+									// Ensure folder exists
+									if (
+										switcherFolderPath &&
+										!(await this.app.vault.adapter.exists(
+											switcherFolderPath,
+										))
+									) {
+										await this.app.vault.createFolder(
+											switcherFolderPath,
+										);
+									}
+
+									const fileName = `${switcherTemplateName}.md`;
+									const filePath = switcherFolderPath
+										? `${switcherFolderPath}/${fileName}`
+										: fileName;
+
+									const header = `<%*\n/*\n** type: switcher\n** for: ${this.usage}\n*/\n_%>\n`;
+									const body = `<%*\n\nconst frontMatter = {};\n\nconst switchers = [];\n\n_%>`;
+									const content = header + body;
+
+									try {
+										const newFile =
+											await this.app.vault.create(
+												filePath,
+												content,
+											);
+										new Notice(
+											t(
+												"SWITCHER_TEMPLATE_CREATED",
+											).replace("${file}", fileName),
+										);
+
+										// Auto import into GeneratorView
+										const leaves =
+											this.app.workspace.getLeavesOfType(
+												GENERATOR_VIEW_TYPE,
+											);
+										if (leaves.length > 0) {
+											const leaf = leaves[0];
+											if (leaf) {
+												const view = leaf.view as any;
+												if (
+													view &&
+													typeof view.importTemplate ===
+														"function"
+												) {
+													view.importTemplate(
+														newFile,
+													);
+												}
+											}
+										}
+									} catch (error) {
+										console.error(
+											"Failed to create switcher template",
+											error,
+										);
+										new Notice(
+											t(
+												"SWITCHER_TEMPLATE_CREATE_FAILED",
+											).replace(
+												"${error}",
+												error instanceof Error
+													? error.message
+													: "Unknown error",
+											),
+										);
+									}
+								}
+							}
 						}
 					});
 			});

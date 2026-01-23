@@ -12,15 +12,17 @@ export class ImagePreviewModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass("image-preview-modal");
-        
-        // Remove default padding to allow image to maximize space if needed, 
-        // or keep it but ensure image fits. 
-        // Usually modals have padding. Let's center the image.
-        
-		const container = contentEl.createDiv({ cls: "image-preview-container" });
-        container.style.display = "flex";
-        container.style.justifyContent = "center";
-        container.style.alignItems = "center";
+
+		// Remove default padding to allow image to maximize space if needed,
+		// or keep it but ensure image fits.
+		// Usually modals have padding. Let's center the image.
+
+		const container = contentEl.createDiv({
+			cls: "image-preview-container",
+		});
+		container.style.display = "flex";
+		container.style.justifyContent = "center";
+		container.style.alignItems = "center";
 
 		const img = container.createEl("img", {
 			attr: {
