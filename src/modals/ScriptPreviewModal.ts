@@ -138,6 +138,10 @@ export class ScriptPreviewModal extends Modal {
 							);
 						}
 						this.close();
+						if (this.type === "Selector") {
+							const switherTemplate =
+								this.noteSettings?.template || "";
+						}
 					});
 			});
 	}
