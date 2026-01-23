@@ -14,6 +14,8 @@ export class ScriptPreviewModal extends Modal {
 	private importedFile: TFile | null;
 	private settings: IOTOTemplateGeneratorSettings;
 	private prefix: string;
+	private folderSettings: Record<string, any>;
+	private noteSettings?: Record<string, any>;
 
 	constructor(
 		app: App,
@@ -22,6 +24,8 @@ export class ScriptPreviewModal extends Modal {
 		usage: string,
 		type: string,
 		importedFile: TFile | null,
+		folderSettings: Record<string, any>,
+		noteSettings?: Record<string, any>,
 	) {
 		super(app);
 		this.script = script;
@@ -32,6 +36,8 @@ export class ScriptPreviewModal extends Modal {
 		this.prefix =
 			this.app.plugins.plugins["ioto-settings"].settings
 				.userTemplatePrefix || "";
+		this.folderSettings = folderSettings;
+		this.noteSettings = noteSettings;
 	}
 
 	onOpen() {

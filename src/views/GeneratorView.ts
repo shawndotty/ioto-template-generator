@@ -885,6 +885,8 @@ export class GeneratorView extends ItemView {
 			this.usage,
 			this.type,
 			this.importedFile,
+			this.folderSettings,
+			this.noteSettings,
 		).open();
 	}
 
