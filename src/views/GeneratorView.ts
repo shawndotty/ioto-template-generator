@@ -527,6 +527,17 @@ export class GeneratorView extends ItemView {
 						item.match = val;
 					});
 					matchInput.inputEl.style.width = "150px";
+					matchInput.inputEl.style.marginRight = "10px";
+
+					const prefixBtn = new ButtonComponent(row);
+					prefixBtn.setButtonText("Prefix");
+					prefixBtn.onClick(() => {
+						let prefix = this.userTemplatePrefix
+							? `${this.userTemplatePrefix}-`
+							: "";
+						item.template = `${prefix}TP-${t(this.usage)}-${item.match}`;
+						this.renderMiddleColumn();
+					});
 
 					// Template Input
 					const templateInput = new TextComponent(row);
