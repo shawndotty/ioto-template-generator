@@ -1,4 +1,4 @@
-import { App, Modal, Setting, Notice, TFile } from "obsidian";
+import { App, Modal, Setting, Notice, TFile, Modifier } from "obsidian";
 import { EditorView, keymap } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript";
@@ -7,6 +7,8 @@ import { defaultKeymap } from "@codemirror/commands";
 import { t } from "../lang/helpers";
 import { IOTOTemplateGeneratorSettings } from "../settings";
 import { GENERATOR_VIEW_TYPE } from "../models/constants";
+import { TemplaterServices } from "../services/templater-services";
+import { HotkeyService } from "../services/hotkey-services";
 
 export class ScriptPreviewModal extends Modal {
 	private script: string;
@@ -289,6 +291,42 @@ export class ScriptPreviewModal extends Modal {
 									),
 								);
 							}
+						}
+
+						if (this.type === "Selector") {
+							// Try to add hotkey if configured
+							const hotkey = this.noteSettings?.hotkey;
+							if (
+								hotkey &&
+								typeof hotkey === "object" &&
+								hotkey.key
+							) {
+								try {
+									const modifiers = (hotkey.modifiers || [
+										"Mod",
+									]) as Modifier[];
+									const key = hotkey.key as string;
+
+									// 1. Add to Templater
+									const templaterService =
+										new TemplaterServices(this.app);
+									await templaterService.addTemplaterHotkeys([
+										targetFilePath,
+									]);
+
+									// 2. Add hotkey
+									await HotkeyService.addTemplaterHotkey(
+										this.app,
+										targetFilePath,
+										modifiers,
+										key,
+									);
+									// ...
+								} catch (error) {
+									// ...
+								}
+							}
+							// ...
 						}
 					});
 			});
