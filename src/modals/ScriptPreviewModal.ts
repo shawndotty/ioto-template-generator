@@ -100,7 +100,9 @@ export class ScriptPreviewModal extends Modal {
 					.setCta()
 					.onClick(async () => {
 						const content = view.state.doc.toString();
+						let targetFilePath = "";
 						if (this.importedFile) {
+							targetFilePath = this.importedFile.path;
 							await this.app.vault.modify(
 								this.importedFile,
 								content,
@@ -131,6 +133,7 @@ export class ScriptPreviewModal extends Modal {
 									? this.settings.selectorFolderPath || ""
 									: this.settings.switcherFolderPath || "";
 							const filePath = `${folderPath}/${fileName}`;
+							targetFilePath = filePath;
 
 							await this.app.vault.create(filePath, content);
 							new Notice(
@@ -295,7 +298,7 @@ export class ScriptPreviewModal extends Modal {
 
 						if (this.type === "Selector") {
 							// Try to add hotkey if configured
-							const hotkey = this.noteSettings?.hotkey;
+							const hotkey = { modifiers: ["Alt"], key: "P" };
 							if (
 								hotkey &&
 								typeof hotkey === "object" &&
@@ -303,7 +306,7 @@ export class ScriptPreviewModal extends Modal {
 							) {
 								try {
 									const modifiers = (hotkey.modifiers || [
-										"Mod",
+										"Alt",
 									]) as Modifier[];
 									const key = hotkey.key as string;
 
@@ -321,12 +324,13 @@ export class ScriptPreviewModal extends Modal {
 										modifiers,
 										key,
 									);
-									// ...
 								} catch (error) {
-									// ...
+									console.error(
+										"Failed to add hotkey",
+										error,
+									);
 								}
 							}
-							// ...
 						}
 					});
 			});
