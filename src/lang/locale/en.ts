@@ -290,6 +290,9 @@ export default {
 	SCRIPT_PREVIEW_BTN_RESTORE: `Restore`,
 	SCRIPT_PREVIEW_BTN_SAVE_AS: `Save as file`,
 	SCRIPT_PREVIEW_BTN_UPDATE: "Update ${file}",
+	SCRIPT_PREVIEW_BTN_ADD_HOTKEY: `Click to add hotkey`,
+	SCRIPT_PREVIEW_BTN_PRESS_HOTKEY: `Press hotkey`,
+	SCRIPT_PREVIEW_HOTKEY_CONFLICT: `Hotkey conflict`,
 	SCRIPT_PREVIEW_NOTICE_COPIED: `Copied to clipboard`,
 	SCRIPT_PREVIEW_NOTICE_SAVED: "Saved to the database as ${file}",
 	SCRIPT_PREVIEW_NOTICE_UPDATED: "Updated ${path}",
@@ -332,7 +335,7 @@ export default {
 	SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_TITLE: `Default Switcher Template`,
 	SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_DESC: `Choose Your Default Switcher Template`,
 	SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_PLACEHOLDER: ``,
-	SWITCHER_TEMPLATE_CREATED: "Switcher template created: ${file}",
+	SWITCHER_TEMPLATE_CREATED: "Switcher template ${file} created",
 	SWITCHER_TEMPLATE_CREATE_FAILED:
 		"Failed to create switcher template: ${error}",
 	NOTE_TEMPLATE_CREATED: "Note template created: ${file}",

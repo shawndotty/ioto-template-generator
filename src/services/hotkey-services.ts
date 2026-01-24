@@ -47,6 +47,42 @@ export class HotkeyService {
 		return null;
 	}
 
+	static async checkHotkeyConflict(
+		app: App,
+		modifiers: Modifier[],
+		key: string,
+		ignoreCommandId?: string,
+	): Promise<boolean> {
+		const configDir = app.vault.configDir;
+		const hotkeysPath = `${configDir}/hotkeys.json`;
+		const adapter = app.vault.adapter;
+
+		try {
+			if (await adapter.exists(hotkeysPath)) {
+				const content = await adapter.read(hotkeysPath);
+				const hotkeysConfig: HotkeysConfig = JSON.parse(content);
+
+				for (const cmdId in hotkeysConfig) {
+					if (ignoreCommandId && cmdId === ignoreCommandId) continue;
+
+					const entries = hotkeysConfig[cmdId];
+					if (!entries) continue;
+					const conflict = entries.some(
+						(entry) =>
+							entry.key === key &&
+							entry.modifiers.length === modifiers.length &&
+							entry.modifiers.every((m) => modifiers.includes(m)),
+					);
+
+					if (conflict) return true;
+				}
+			}
+		} catch (error) {
+			console.error("Failed to check hotkey conflict", error);
+		}
+		return false;
+	}
+
 	/**
 	 * Adds or updates a hotkey for a Templater template in hotkeys.json
 	 * @param app The Obsidian App instance

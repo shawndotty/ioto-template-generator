@@ -1,4 +1,13 @@
-import { App, Modal, Setting, Notice, TFile, Modifier } from "obsidian";
+import {
+	App,
+	Modal,
+	Setting,
+	Notice,
+	TFile,
+	Modifier,
+	Platform,
+	ButtonComponent,
+} from "obsidian";
 import { EditorView, keymap } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript";
@@ -22,6 +31,8 @@ export class ScriptPreviewModal extends Modal {
 	private templateName: string;
 	private targetFilePath: string;
 	private hotkey?: HotkeyEntry | null;
+	private isRecordingHotkey = false;
+	private hotkeyBtn: ButtonComponent;
 
 	constructor(
 		app: App,
@@ -51,7 +62,10 @@ export class ScriptPreviewModal extends Modal {
 			HotkeyService.getTemplaterHotkey(
 				this.app,
 				this.importedFile.path,
-			).then((hk) => (this.hotkey = hk));
+			).then((hk) => {
+				this.hotkey = hk;
+				this.updateHotkeyButton();
+			});
 		}
 	}
 
@@ -129,6 +143,11 @@ export class ScriptPreviewModal extends Modal {
 		}
 
 		previewSetting
+			.addButton((btn) => {
+				this.hotkeyBtn = btn;
+				this.updateHotkeyButton();
+				btn.onClick(() => this.toggleHotkeyRecording());
+			})
 			.addButton((btn) => {
 				btn.setButtonText(t("SCRIPT_PREVIEW_BTN_MAXIMIZE")).onClick(
 					() => {
@@ -337,7 +356,7 @@ export class ScriptPreviewModal extends Modal {
 							}
 						}
 
-						if (this.type === "Selector") {
+						if (this.hotkey) {
 							// Try to add hotkey if configured
 							const hotkey = this.hotkey;
 							if (
@@ -379,7 +398,88 @@ export class ScriptPreviewModal extends Modal {
 		previewSetting.infoEl.hide();
 	}
 
+	updateHotkeyButton() {
+		if (!this.hotkeyBtn) return;
+
+		const btnEl = this.hotkeyBtn.buttonEl;
+		btnEl.removeClass("mod-warning");
+
+		if (this.isRecordingHotkey) {
+			this.hotkeyBtn.setButtonText(t("SCRIPT_PREVIEW_BTN_PRESS_HOTKEY"));
+			this.hotkeyBtn.setCta();
+		} else if (this.hotkey) {
+			const modifiers = this.hotkey.modifiers.join("+");
+			const key = this.hotkey.key.toUpperCase();
+			this.hotkeyBtn.setButtonText(`${modifiers}+${key}`);
+			this.hotkeyBtn.removeCta();
+		} else {
+			this.hotkeyBtn.setButtonText(t("SCRIPT_PREVIEW_BTN_ADD_HOTKEY"));
+			this.hotkeyBtn.removeCta();
+		}
+	}
+
+	toggleHotkeyRecording() {
+		if (this.isRecordingHotkey) {
+			this.stopRecording();
+		} else {
+			this.startRecording();
+		}
+	}
+
+	startRecording() {
+		this.isRecordingHotkey = true;
+		this.updateHotkeyButton();
+		document.addEventListener("keydown", this.handleKeyDown);
+	}
+
+	stopRecording() {
+		this.isRecordingHotkey = false;
+		document.removeEventListener("keydown", this.handleKeyDown);
+		this.updateHotkeyButton();
+	}
+
+	handleKeyDown = async (e: KeyboardEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+
+		const finalModifiers: Modifier[] = [];
+
+		if (Platform.isMacOS) {
+			if (e.metaKey) finalModifiers.push("Mod");
+			if (e.ctrlKey) finalModifiers.push("Ctrl");
+			if (e.altKey) finalModifiers.push("Alt");
+			if (e.shiftKey) finalModifiers.push("Shift");
+		} else {
+			if (e.ctrlKey) finalModifiers.push("Mod");
+			if (e.metaKey) finalModifiers.push("Meta");
+			if (e.altKey) finalModifiers.push("Alt");
+			if (e.shiftKey) finalModifiers.push("Shift");
+		}
+
+		const key = e.key.toUpperCase();
+
+		const conflict = await HotkeyService.checkHotkeyConflict(
+			this.app,
+			finalModifiers,
+			key,
+			`templater-obsidian:${this.targetFilePath}`,
+		);
+
+		if (conflict) {
+			this.hotkey = { modifiers: finalModifiers, key };
+			this.stopRecording();
+			this.hotkeyBtn.buttonEl.addClass("mod-warning");
+			new Notice(t("SCRIPT_PREVIEW_HOTKEY_CONFLICT"));
+		} else {
+			this.hotkey = { modifiers: finalModifiers, key };
+			this.stopRecording();
+		}
+	};
+
 	onClose() {
+		document.removeEventListener("keydown", this.handleKeyDown);
 		this.contentEl.empty();
 	}
 }
