@@ -31,6 +31,8 @@ export class HotkeyService {
 
 				const commandId = `templater-obsidian:${templatePath}`;
 
+				console.dir(commandId);
+
 				if (
 					hotkeysConfig[commandId] &&
 					hotkeysConfig[commandId].length > 0

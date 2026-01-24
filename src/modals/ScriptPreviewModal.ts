@@ -8,7 +8,7 @@ import { t } from "../lang/helpers";
 import { IOTOTemplateGeneratorSettings } from "../settings";
 import { GENERATOR_VIEW_TYPE } from "../models/constants";
 import { TemplaterServices } from "../services/templater-services";
-import { HotkeyService } from "../services/hotkey-services";
+import { HotkeyService, HotkeyEntry } from "../services/hotkey-services";
 
 export class ScriptPreviewModal extends Modal {
 	private script: string;
@@ -21,6 +21,7 @@ export class ScriptPreviewModal extends Modal {
 	private noteSettings?: Record<string, any>;
 	private templateName: string;
 	private targetFilePath: string;
+	private hotkey?: HotkeyEntry | null;
 
 	constructor(
 		app: App,
@@ -46,6 +47,12 @@ export class ScriptPreviewModal extends Modal {
 
 		this.makeTemplateName();
 		this.makeTargetFilePath();
+		if (this.importedFile) {
+			HotkeyService.getTemplaterHotkey(
+				this.app,
+				this.importedFile.path,
+			).then((hk) => (this.hotkey = hk));
+		}
 	}
 
 	makeTemplateName() {
@@ -106,7 +113,22 @@ export class ScriptPreviewModal extends Modal {
 			parent: editorContainer,
 		});
 
-		new Setting(this.contentEl)
+		const previewSetting = new Setting(this.contentEl);
+
+		if (!this.importedFile) {
+			previewSetting.addText(
+				(text) =>
+					(text
+						.setPlaceholder(this.templateName)
+						.setValue(this.templateName)
+						.onChange((value) => {
+							this.templateName = value;
+							this.makeTargetFilePath();
+						}).inputEl.style.width = "100%"),
+			);
+		}
+
+		previewSetting
 			.addButton((btn) => {
 				btn.setButtonText(t("SCRIPT_PREVIEW_BTN_MAXIMIZE")).onClick(
 					() => {
@@ -317,7 +339,7 @@ export class ScriptPreviewModal extends Modal {
 
 						if (this.type === "Selector") {
 							// Try to add hotkey if configured
-							const hotkey = { modifiers: ["Alt"], key: "P" };
+							const hotkey = this.hotkey;
 							if (
 								hotkey &&
 								typeof hotkey === "object" &&
@@ -353,6 +375,8 @@ export class ScriptPreviewModal extends Modal {
 						}
 					});
 			});
+
+		previewSetting.infoEl.hide();
 	}
 
 	onClose() {
