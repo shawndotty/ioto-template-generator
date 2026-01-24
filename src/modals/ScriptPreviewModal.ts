@@ -143,87 +143,75 @@ export class ScriptPreviewModal extends Modal {
 						if (this.type === "Selector") {
 							const switcherTemplateName =
 								this.noteSettings?.template || "";
+							if (!switcherTemplateName) return;
 
-							if (switcherTemplateName) {
-								const existingFile =
-									this.app.metadataCache.getFirstLinkpathDest(
-										switcherTemplateName,
-										"",
-									);
-								if (!existingFile) {
-									const switcherFolderPath =
-										this.settings.switcherFolderPath || "";
+							const existingFile =
+								this.app.metadataCache.getFirstLinkpathDest(
+									switcherTemplateName,
+									"",
+								);
+							if (existingFile) return;
 
-									// Ensure folder exists
+							const switcherFolderPath =
+								this.settings.switcherFolderPath || "";
+							if (
+								switcherFolderPath &&
+								!(await this.app.vault.adapter.exists(
+									switcherFolderPath,
+								))
+							) {
+								await this.app.vault.createFolder(
+									switcherFolderPath,
+								);
+							}
+
+							const fileName = `${switcherTemplateName}.md`;
+							const filePath = switcherFolderPath
+								? `${switcherFolderPath}/${fileName}`
+								: fileName;
+							const content = `<%*\n/*\n** type: switcher\n** for: ${this.usage}\n*/\n_%>\n\n<%*\n\nconst frontMatter = {};\n\nconst switchers = [];\n\n_%>`;
+
+							try {
+								const newFile = await this.app.vault.create(
+									filePath,
+									content,
+								);
+								new Notice(
+									t("SWITCHER_TEMPLATE_CREATED").replace(
+										"${file}",
+										fileName,
+									),
+								);
+
+								// Auto import into GeneratorView
+								const leaf =
+									this.app.workspace.getLeavesOfType(
+										GENERATOR_VIEW_TYPE,
+									)?.[0];
+								if (leaf) {
+									const view = leaf.view as any;
 									if (
-										switcherFolderPath &&
-										!(await this.app.vault.adapter.exists(
-											switcherFolderPath,
-										))
+										typeof view?.importTemplate ===
+										"function"
 									) {
-										await this.app.vault.createFolder(
-											switcherFolderPath,
-										);
-									}
-
-									const fileName = `${switcherTemplateName}.md`;
-									const filePath = switcherFolderPath
-										? `${switcherFolderPath}/${fileName}`
-										: fileName;
-
-									const header = `<%*\n/*\n** type: switcher\n** for: ${this.usage}\n*/\n_%>\n`;
-									const body = `<%*\n\nconst frontMatter = {};\n\nconst switchers = [];\n\n_%>`;
-									const content = header + body;
-
-									try {
-										const newFile =
-											await this.app.vault.create(
-												filePath,
-												content,
-											);
-										new Notice(
-											t(
-												"SWITCHER_TEMPLATE_CREATED",
-											).replace("${file}", fileName),
-										);
-
-										// Auto import into GeneratorView
-										const leaves =
-											this.app.workspace.getLeavesOfType(
-												GENERATOR_VIEW_TYPE,
-											);
-										if (leaves.length > 0) {
-											const leaf = leaves[0];
-											if (leaf) {
-												const view = leaf.view as any;
-												if (
-													view &&
-													typeof view.importTemplate ===
-														"function"
-												) {
-													view.importTemplate(
-														newFile,
-													);
-												}
-											}
-										}
-									} catch (error) {
-										console.error(
-											"Failed to create switcher template",
-											error,
-										);
-										new Notice(
-											t(
-												"SWITCHER_TEMPLATE_CREATE_FAILED",
-											).replace(
-												"${error}",
-												error instanceof Error
-													? error.message
-													: "Unknown error",
-											),
-										);
+										view.importTemplate(newFile);
 									}
 								}
+							} catch (error) {
+								console.error(
+									"Failed to create switcher template",
+									error,
+								);
+								new Notice(
+									t(
+										"SWITCHER_TEMPLATE_CREATE_FAILED",
+									).replace(
+										"${error}",
+										error instanceof Error
+											? error.message
+											: "Unknown error",
+									),
+								);
 							}
 						}
 
@@ -231,78 +219,74 @@ export class ScriptPreviewModal extends Modal {
 							const switchers =
 								this.folderSettings?.switchers || [];
 							console.dir(switchers);
-							if (switchers.length > 0) {
-								switchers.forEach(
-									async (switcher: {
-										match: string;
-										template: string;
-									}) => {
-										const switcherTemplate =
-											switcher.template || "";
-										if (switcherTemplate) {
-											const existingFile =
+							if (switchers.length) {
+								// 并行创建缺失的 note 模板
+								await Promise.all(
+									switchers.map(
+										async ({
+											template,
+										}: {
+											template: string;
+										}) => {
+											if (!template) return;
+											const exists =
 												this.app.metadataCache.getFirstLinkpathDest(
-													switcherTemplate,
+													template,
 													"",
 												);
-											if (!existingFile) {
-												const noteTemplatesPath =
-													this.settings
-														.noteTemplatesFolderPath ||
-													"";
+											if (exists) return;
 
-												// Ensure folder exists
-												if (
-													noteTemplatesPath &&
-													!(await this.app.vault.adapter.exists(
-														noteTemplatesPath,
-													))
-												) {
-													await this.app.vault.createFolder(
-														noteTemplatesPath,
-													);
-												}
-
-												const fileName = `${switcherTemplate}.md`;
-												const filePath =
-													noteTemplatesPath
-														? `${noteTemplatesPath}/${fileName}`
-														: fileName;
-
-												try {
-													const newFile =
-														await this.app.vault.create(
-															filePath,
-															"",
-														);
-													new Notice(
-														t(
-															"NOTE_TEMPLATE_CREATED",
-														).replace(
-															"${file}",
-															fileName,
-														),
-													);
-												} catch (error) {
-													console.error(
-														"Failed to create note template",
-														error,
-													);
-													new Notice(
-														t(
-															"NOTE_TEMPLATE_CREATE_FAILED",
-														).replace(
-															"${error}",
-															error instanceof
-																Error
-																? error.message
-																: "Unknown error",
-														),
-													);
-												}
+											const dir =
+												this.settings
+													.noteTemplatesFolderPath ||
+												"";
+											if (
+												dir &&
+												!(await this.app.vault.adapter.exists(
+													dir,
+												))
+											) {
+												await this.app.vault.createFolder(
+													dir,
+												);
 											}
-										}
-									},
+
+											const fileName = `${template}.md`;
+											const filePath = dir
+												? `${dir}/${fileName}`
+												: fileName;
+
+											try {
+												await this.app.vault.create(
+													filePath,
+													"",
+												);
+												new Notice(
+													t(
+														"NOTE_TEMPLATE_CREATED",
+													).replace(
+														"${file}",
+														fileName,
+													),
+												);
+											} catch (err) {
+												console.error(
+													"Failed to create note template",
+													err,
+												);
+												new Notice(
+													t(
+														"NOTE_TEMPLATE_CREATE_FAILED",
+													).replace(
+														"${error}",
+														err instanceof Error
+															? err.message
+															: "Unknown error",
+													),
+												);
+											}
+										},
+									),
 								);
 							}
 						}
