@@ -1,4 +1,4 @@
-import { App, Modifier } from "obsidian";
+import { App, Modifier, Notice } from "obsidian";
 
 export interface HotkeyEntry {
 	modifiers: Modifier[];
@@ -132,7 +132,7 @@ export class HotkeyService {
 
 					// 6. Save to disk (hotkeys.json) via Manager
 					hotkeyManager.save();
-					console.log(`Hotkey added for ${commandId}`);
+					new Notice(`Hotkey added for ${commandId}`, 2000);
 				}
 			} catch (error) {
 				console.error("Failed to add hotkey via manager", error);
