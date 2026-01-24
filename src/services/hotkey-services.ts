@@ -94,66 +94,51 @@ export class HotkeyService {
 		modifiers: Modifier[],
 		key: string,
 	): Promise<void> {
-		const configDir = app.vault.configDir;
-		const hotkeysPath = `${configDir}/hotkeys.json`;
-		const adapter = app.vault.adapter;
-
-		let hotkeysConfig: HotkeysConfig = {};
-
-		try {
-			if (await adapter.exists(hotkeysPath)) {
-				const content = await adapter.read(hotkeysPath);
-				hotkeysConfig = JSON.parse(content);
-			}
-		} catch (error) {
-			console.error("Failed to read hotkeys.json", error);
-			throw error;
-		}
-
-		// Construct the command ID for Templater
-		// Format: templater-obsidian:<template_path>
 		const commandId = `templater-obsidian:${templatePath}`;
+		const hotkeyManager = (app as any).hotkeyManager;
+		console.dir(hotkeyManager);
 
-		if (!hotkeysConfig[commandId]) {
-			hotkeysConfig[commandId] = [];
-		}
-
-		// Check if the hotkey already exists for this command
-		const hotkeyExists = hotkeysConfig[commandId].some((entry) => {
-			return (
-				entry.key === key &&
-				entry.modifiers.length === modifiers.length &&
-				entry.modifiers.every((m) => modifiers.includes(m))
-			);
-		});
-
-		if (!hotkeyExists) {
-			hotkeysConfig[commandId].push({
-				modifiers: modifiers,
-				key: key,
-			});
-
+		if (hotkeyManager) {
 			try {
-				await adapter.write(
-					hotkeysPath,
-					JSON.stringify(hotkeysConfig, null, 2),
+				// 1. Get existing hotkeys for this command
+				let hotkeys: HotkeyEntry[] = [];
+				if (
+					hotkeyManager.customKeys &&
+					hotkeyManager.customKeys[commandId]
+				) {
+					hotkeys = [...hotkeyManager.customKeys[commandId]];
+				}
+
+				// 2. Check if hotkey already exists
+				const hotkeyExists = hotkeys.some(
+					(entry: HotkeyEntry) =>
+						entry.key === key &&
+						entry.modifiers.length === modifiers.length &&
+						entry.modifiers.every((m) => modifiers.includes(m)),
 				);
 
-				// Apply hotkey at runtime without reload
-				const hotkeyManager = (app as any).hotkeyManager;
-				if (
-					hotkeyManager &&
-					typeof hotkeyManager.setHotkeys === "function"
-				) {
-					hotkeyManager.setHotkeys(
-						commandId,
-						hotkeysConfig[commandId],
-					);
+				if (!hotkeyExists) {
+					// 3. Add new hotkey
+					const newHotkey = { modifiers, key };
+					hotkeys.push(newHotkey);
+
+					// 4. Update customKeys (Source of Truth for persistence)
+					hotkeyManager.customKeys[commandId] = hotkeys;
+
+					// 5. Update runtime hotkeys (if command exists)
+					if (hotkeyManager.setHotkeys) {
+						hotkeyManager.setHotkeys(commandId, hotkeys);
+					}
+
+					// 6. Save to disk (hotkeys.json) via Manager
+					hotkeyManager.save();
+					console.log(`Hotkey added for ${commandId}`);
 				}
 			} catch (error) {
-				console.error("Failed to write hotkeys.json", error);
-				throw error;
+				console.error("Failed to add hotkey via manager", error);
 			}
+		} else {
+			console.error("HotkeyManager not available");
 		}
 	}
 }
