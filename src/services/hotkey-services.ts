@@ -31,8 +31,6 @@ export class HotkeyService {
 
 				const commandId = `templater-obsidian:${templatePath}`;
 
-				console.dir(commandId);
-
 				if (
 					hotkeysConfig[commandId] &&
 					hotkeysConfig[commandId].length > 0
@@ -140,6 +138,18 @@ export class HotkeyService {
 					hotkeysPath,
 					JSON.stringify(hotkeysConfig, null, 2),
 				);
+
+				// Apply hotkey at runtime without reload
+				const hotkeyManager = (app as any).hotkeyManager;
+				if (
+					hotkeyManager &&
+					typeof hotkeyManager.setHotkeys === "function"
+				) {
+					hotkeyManager.setHotkeys(
+						commandId,
+						hotkeysConfig[commandId],
+					);
+				}
 			} catch (error) {
 				console.error("Failed to write hotkeys.json", error);
 				throw error;

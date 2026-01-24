@@ -283,7 +283,6 @@ export class ScriptPreviewModal extends Modal {
 						if (this.type === "Switcher") {
 							const switchers =
 								this.folderSettings?.switchers || [];
-							console.dir(switchers);
 							if (switchers.length) {
 								// 并行创建缺失的 note 模板
 								await Promise.all(
@@ -356,9 +355,10 @@ export class ScriptPreviewModal extends Modal {
 							}
 						}
 
-						if (this.hotkey) {
+						if (this.type === "Selector") {
 							// Try to add hotkey if configured
 							const hotkey = this.hotkey;
+							console.dir(this.hotkey);
 							if (
 								hotkey &&
 								typeof hotkey === "object" &&
@@ -458,7 +458,38 @@ export class ScriptPreviewModal extends Modal {
 			if (e.shiftKey) finalModifiers.push("Shift");
 		}
 
-		const key = e.key.toUpperCase();
+		let key = e.key.toUpperCase();
+
+		// Handle Alt+Key behavior on macOS where it produces special characters
+		if (e.code.startsWith("Digit")) {
+			key = e.code.replace("Digit", "");
+		} else if (e.code.startsWith("Key")) {
+			key = e.code.replace("Key", "");
+		} else if (e.code.startsWith("Numpad")) {
+			key = e.code.replace("Numpad", "");
+		} else if (e.code === "Minus") {
+			key = "-";
+		} else if (e.code === "Equal") {
+			key = "=";
+		} else if (e.code === "BracketLeft") {
+			key = "[";
+		} else if (e.code === "BracketRight") {
+			key = "]";
+		} else if (e.code === "Backslash") {
+			key = "\\";
+		} else if (e.code === "Semicolon") {
+			key = ";";
+		} else if (e.code === "Quote") {
+			key = "'";
+		} else if (e.code === "Comma") {
+			key = ",";
+		} else if (e.code === "Period") {
+			key = ".";
+		} else if (e.code === "Slash") {
+			key = "/";
+		} else if (e.code === "Backquote") {
+			key = "`";
+		}
 
 		const conflict = await HotkeyService.checkHotkeyConflict(
 			this.app,
