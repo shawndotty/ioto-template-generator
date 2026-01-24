@@ -284,8 +284,7 @@ export default {
 	GENERATOR_VIEW_RESET_TOOLTIP: `Reset to default`,
 	GENERATOR_VIEW_IMAGE_EXPLAIN_TITLE: `Image Explain`,
 	PICKER_NO_FILES_FOUND: `No files found`,
-	SWITCHER_TEMPLATE_CREATED: "Switcher template created: ${file}",
-	SWITCHER_TEMPLATE_CREATE_FAILED: "Failed to create switcher template: ${error}",
+
 	SCRIPT_PREVIEW_BTN_COPY: `Copy to clipboard`,
 	SCRIPT_PREVIEW_BTN_MAXIMIZE: `Maximize`,
 	SCRIPT_PREVIEW_BTN_RESTORE: `Restore`,
@@ -333,4 +332,12 @@ export default {
 	SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_TITLE: `Default Switcher Template`,
 	SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_DESC: `Choose Your Default Switcher Template`,
 	SETTINGS_SWITCHERS_DEFAULT_TEMPLATE_PLACEHOLDER: ``,
+	SWITCHER_TEMPLATE_CREATED: "Switcher template created: ${file}",
+	SWITCHER_TEMPLATE_CREATE_FAILED:
+		"Failed to create switcher template: ${error}",
+	NOTE_TEMPLATE_CREATED: "Note template created: ${file}",
+	NOTE_TEMPLATE_CREATE_FAILED: "Failed to create note template: ${error}",
+	SETTINGS_NOTES_TEMPLATES_FOLDER_TITLE: `Notes Templates Folder`,
+	SETTINGS_NOTES_TEMPLATES_FOLDER_DESC: `Folder for Saving Notes Templates`,
+	SETTINGS_NOTES_TEMPLATES_FOLDER_PLACEHOLDER: `MyNotesTemplates`,
 };

@@ -21,6 +21,7 @@ export interface IOTOTemplateGeneratorSettings {
 	defaultCustomSwitcherPath: string;
 	selectorFolderPath: string;
 	switcherFolderPath: string;
+	noteTemplatesFolderPath: string;
 }
 
 export const DEFAULT_SETTINGS: IOTOTemplateGeneratorSettings = {
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: IOTOTemplateGeneratorSettings = {
 	defaultCustomSwitcherPath: "",
 	selectorFolderPath: "",
 	switcherFolderPath: "",
+	noteTemplatesFolderPath: "",
 };
 
 export class SettingTab extends PluginSettingTab {
@@ -166,6 +168,39 @@ export class SettingTab extends PluginSettingTab {
 							this.app,
 							async (folder) => {
 								this.plugin.settings.switcherFolderPath =
+									folder.path;
+								await this.plugin.saveSettings();
+								this.currentTabIndex = 0;
+								this.display();
+							},
+							["MyIOTO", "Templates", "Templater"],
+						).open();
+					}),
+			);
+
+		new Setting(content)
+			.setName(t("SETTINGS_NOTES_TEMPLATES_FOLDER_TITLE"))
+			.setDesc(t("SETTINGS_NOTES_TEMPLATES_FOLDER_DESC"))
+			.addText((text) =>
+				text
+					.setPlaceholder(
+						t("SETTINGS_NOTES_TEMPLATES_FOLDER_PLACEHOLDER"),
+					)
+					.setValue(this.plugin.settings.noteTemplatesFolderPath)
+					.onChange(async (value) => {
+						this.plugin.settings.noteTemplatesFolderPath = value;
+						await this.plugin.saveSettings();
+					}),
+			)
+			.addButton((btn) =>
+				btn
+					.setIcon("folder")
+					.setTooltip("Choose a folder")
+					.onClick(() => {
+						new FolderPickerModal(
+							this.app,
+							async (folder) => {
+								this.plugin.settings.noteTemplatesFolderPath =
 									folder.path;
 								await this.plugin.saveSettings();
 								this.currentTabIndex = 0;

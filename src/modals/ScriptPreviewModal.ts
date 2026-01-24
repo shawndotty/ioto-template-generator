@@ -143,7 +143,7 @@ export class ScriptPreviewModal extends Modal {
 						if (this.type === "Selector") {
 							const switcherTemplateName =
 								this.noteSettings?.template || "";
-							console.log(switcherTemplateName);
+
 							if (switcherTemplateName) {
 								const existingFile =
 									this.app.metadataCache.getFirstLinkpathDest(
@@ -224,6 +224,86 @@ export class ScriptPreviewModal extends Modal {
 										);
 									}
 								}
+							}
+						}
+
+						if (this.type === "Switcher") {
+							const switchers =
+								this.folderSettings?.switchers || [];
+							console.dir(switchers);
+							if (switchers.length > 0) {
+								switchers.forEach(
+									async (switcher: {
+										match: string;
+										template: string;
+									}) => {
+										const switcherTemplate =
+											switcher.template || "";
+										if (switcherTemplate) {
+											const existingFile =
+												this.app.metadataCache.getFirstLinkpathDest(
+													switcherTemplate,
+													"",
+												);
+											if (!existingFile) {
+												const noteTemplatesPath =
+													this.settings
+														.noteTemplatesFolderPath ||
+													"";
+
+												// Ensure folder exists
+												if (
+													noteTemplatesPath &&
+													!(await this.app.vault.adapter.exists(
+														noteTemplatesPath,
+													))
+												) {
+													await this.app.vault.createFolder(
+														noteTemplatesPath,
+													);
+												}
+
+												const fileName = `${switcherTemplate}.md`;
+												const filePath =
+													noteTemplatesPath
+														? `${noteTemplatesPath}/${fileName}`
+														: fileName;
+
+												try {
+													const newFile =
+														await this.app.vault.create(
+															filePath,
+															"",
+														);
+													new Notice(
+														t(
+															"NOTE_TEMPLATE_CREATED",
+														).replace(
+															"${file}",
+															fileName,
+														),
+													);
+												} catch (error) {
+													console.error(
+														"Failed to create note template",
+														error,
+													);
+													new Notice(
+														t(
+															"NOTE_TEMPLATE_CREATE_FAILED",
+														).replace(
+															"${error}",
+															error instanceof
+																Error
+																? error.message
+																: "Unknown error",
+														),
+													);
+												}
+											}
+										}
+									},
+								);
 							}
 						}
 					});
