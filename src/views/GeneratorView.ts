@@ -1,4 +1,5 @@
 import {
+	App,
 	ItemView,
 	WorkspaceLeaf,
 	Setting,
@@ -30,6 +31,7 @@ import IOTOTemplateGeneratorPlugin from "../main";
 import { t } from "../lang/helpers";
 
 export class GeneratorView extends ItemView {
+	app: App;
 	type: TemplateType = "Selector";
 	usage: Usage = "Input";
 	folderSettings: Record<string, string> = {};
@@ -44,10 +46,15 @@ export class GeneratorView extends ItemView {
 	// UI Elements
 	middleContainer: HTMLElement;
 	rightContainer: HTMLElement;
+	userTemplatePrefix: string;
 
 	constructor(leaf: WorkspaceLeaf, plugin: IOTOTemplateGeneratorPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+		this.app = this.plugin.app;
+		this.userTemplatePrefix =
+			this.app.plugins.plugins["ioto-settings"]?.settings
+				.userTemplatePrefix || "";
 	}
 
 	getViewType() {
@@ -411,6 +418,18 @@ export class GeneratorView extends ItemView {
 					});
 			});
 		} else if (opt.valueType === "file") {
+			if (opt.name === "template") {
+				s.addButton((btn) => {
+					btn.setButtonText("Prefix").onClick(() => {
+						let prefix = this.userTemplatePrefix
+							? `${this.userTemplatePrefix}-`
+							: "";
+						target[opt.name] =
+							`${prefix}TP-${t(this.usage)}-${t("Switcher")}-`;
+						this.renderMiddleColumn();
+					});
+				});
+			}
 			s.addText((text) => {
 				text.setPlaceholder(opt.example || "")
 					.setValue(
