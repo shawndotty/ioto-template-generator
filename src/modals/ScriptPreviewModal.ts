@@ -19,6 +19,8 @@ export class ScriptPreviewModal extends Modal {
 	private prefix: string;
 	private folderSettings: Record<string, any>;
 	private noteSettings?: Record<string, any>;
+	private templateName: string;
+	private targetFilePath: string;
 
 	constructor(
 		app: App,
@@ -41,6 +43,42 @@ export class ScriptPreviewModal extends Modal {
 				.userTemplatePrefix || "";
 		this.folderSettings = folderSettings;
 		this.noteSettings = noteSettings;
+
+		this.makeTemplateName();
+		this.makeTargetFilePath();
+	}
+
+	makeTemplateName() {
+		if (this.importedFile) {
+			this.templateName = `${this.importedFile.basename}`;
+		} else {
+			const templateUsage = t(
+				this.usage as
+					| "Input"
+					| "Output"
+					| "Task"
+					| "Outcome"
+					| "Custom",
+			);
+			let prefix = this.prefix ? this.prefix + "-" : "";
+			if (this.type === "Selector") {
+				this.templateName = `${prefix}TP-${t("Selector")}-${t("Create") + templateUsage}-${Date.now()}`;
+			} else {
+				this.templateName = `${prefix}-${templateUsage}-${t("Switcher")}-${t("Create")}${this.usage === "Task" ? t("TaskList") : templateUsage + t("Note")}-${Date.now()}`;
+			}
+		}
+	}
+
+	makeTargetFilePath() {
+		if (this.importedFile) {
+			this.targetFilePath = this.importedFile.path;
+		} else {
+			const folderPath =
+				this.type === "Selector"
+					? this.settings.selectorFolderPath || ""
+					: this.settings.switcherFolderPath || "";
+			this.targetFilePath = `${folderPath}/${this.templateName}.md`;
+		}
 	}
 
 	onOpen() {
@@ -100,9 +138,8 @@ export class ScriptPreviewModal extends Modal {
 					.setCta()
 					.onClick(async () => {
 						const content = view.state.doc.toString();
-						let targetFilePath = "";
+
 						if (this.importedFile) {
-							targetFilePath = this.importedFile.path;
 							await this.app.vault.modify(
 								this.importedFile,
 								content,
@@ -114,32 +151,14 @@ export class ScriptPreviewModal extends Modal {
 								),
 							);
 						} else {
-							let fileName = "";
-							const templateUsage = t(
-								this.usage as
-									| "Input"
-									| "Output"
-									| "Task"
-									| "Outcome"
-									| "Custom",
+							await this.app.vault.create(
+								this.targetFilePath,
+								content,
 							);
-							if (this.type === "Selector") {
-								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${t("Selector")}-${t("Create") + templateUsage}-${Date.now()}.md`;
-							} else {
-								fileName = `${this.prefix ? this.prefix + "-" : ""}TP-${templateUsage}-${t("Switcher")}-${t("Create")}${this.usage === "Task" ? t("TaskList") : templateUsage + t("Note")}-${Date.now()}.md`;
-							}
-							const folderPath =
-								this.type === "Selector"
-									? this.settings.selectorFolderPath || ""
-									: this.settings.switcherFolderPath || "";
-							const filePath = `${folderPath}/${fileName}`;
-							targetFilePath = filePath;
-
-							await this.app.vault.create(filePath, content);
 							new Notice(
 								t("SCRIPT_PREVIEW_NOTICE_SAVED").replace(
 									"${file}",
-									fileName,
+									this.templateName,
 								),
 							);
 						}
@@ -314,13 +333,13 @@ export class ScriptPreviewModal extends Modal {
 									const templaterService =
 										new TemplaterServices(this.app);
 									await templaterService.addTemplaterHotkeys([
-										targetFilePath,
+										this.targetFilePath,
 									]);
 
 									// 2. Add hotkey
 									await HotkeyService.addTemplaterHotkey(
 										this.app,
-										targetFilePath,
+										this.targetFilePath,
 										modifiers,
 										key,
 									);

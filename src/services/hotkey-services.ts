@@ -1,6 +1,6 @@
 import { App, Modifier } from "obsidian";
 
-interface HotkeyEntry {
+export interface HotkeyEntry {
 	modifiers: Modifier[];
 	key: string;
 }
@@ -10,6 +10,41 @@ interface HotkeysConfig {
 }
 
 export class HotkeyService {
+	/**
+	 * Gets the hotkey for a Templater template from hotkeys.json
+	 * @param app The Obsidian App instance
+	 * @param templatePath The path to the template file (relative to vault root)
+	 * @returns The first hotkey found or null if none exists
+	 */
+	static async getTemplaterHotkey(
+		app: App,
+		templatePath: string,
+	): Promise<HotkeyEntry | null> {
+		const configDir = app.vault.configDir;
+		const hotkeysPath = `${configDir}/hotkeys.json`;
+		const adapter = app.vault.adapter;
+
+		try {
+			if (await adapter.exists(hotkeysPath)) {
+				const content = await adapter.read(hotkeysPath);
+				const hotkeysConfig: HotkeysConfig = JSON.parse(content);
+
+				const commandId = `templater-obsidian:${templatePath}`;
+
+				if (
+					hotkeysConfig[commandId] &&
+					hotkeysConfig[commandId].length > 0
+				) {
+					return hotkeysConfig[commandId][0] || null;
+				}
+			}
+		} catch (error) {
+			console.error("Failed to read hotkeys.json", error);
+		}
+
+		return null;
+	}
+
 	/**
 	 * Adds or updates a hotkey for a Templater template in hotkeys.json
 	 * @param app The Obsidian App instance
