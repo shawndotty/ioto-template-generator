@@ -340,4 +340,7 @@ export default {
 	SETTINGS_NOTES_TEMPLATES_FOLDER_TITLE: `Notes Templates Folder`,
 	SETTINGS_NOTES_TEMPLATES_FOLDER_DESC: `Folder for Saving Notes Templates`,
 	SETTINGS_NOTES_TEMPLATES_FOLDER_PLACEHOLDER: `MyNotesTemplates`,
+	ADDED: `Added`,
+	TEMPLATES_TO_TEMPLATER_HOTKEYS: `templates to Templater hotkeys`,
+	TEMPLATES_ALREADY_EXIST: `All templates already exist in Templater hotkeys`,
 };
