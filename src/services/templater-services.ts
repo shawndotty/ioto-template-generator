@@ -1,4 +1,4 @@
-import { App, Notice } from "obsidian";
+import { App, Notice, TFile } from "obsidian";
 import { t } from "../lang/helpers";
 
 interface TemplaterPlugin {
@@ -42,6 +42,7 @@ export class TemplaterServices {
 
 		// 添加不存在的模板路径
 		let addedCount = 0;
+		const newPaths: string[] = [];
 		for (const templatePath of templatePaths) {
 			if (
 				!currentSettings.enabled_templates_hotkeys.includes(
@@ -49,6 +50,7 @@ export class TemplaterServices {
 				)
 			) {
 				currentSettings.enabled_templates_hotkeys.push(templatePath);
+				newPaths.push(templatePath);
 				addedCount++;
 			}
 		}
@@ -56,6 +58,12 @@ export class TemplaterServices {
 		if (addedCount > 0) {
 			// 保存设置
 			await templater.save_settings();
+
+			// Manually register commands for new templates to avoid reload
+			for (const path of newPaths) {
+				this.registerTemplaterCommand(path);
+			}
+
 			new Notice(
 				`${t("ADDED")} ${addedCount} ${t(
 					"TEMPLATES_TO_TEMPLATER_HOTKEYS",
@@ -66,5 +74,39 @@ export class TemplaterServices {
 			new Notice(t("TEMPLATES_ALREADY_EXIST"));
 			return false;
 		}
+	}
+
+	private registerTemplaterCommand(templatePath: string) {
+		const templater = this.getTemplater();
+		if (!templater) return;
+
+		const commandId = `templater-obsidian:${templatePath}`;
+		// Check if command already exists
+		if ((this.app as any).commands.findCommand(commandId)) return;
+
+		// Use the plugin's addCommand to ensure correct ID prefix and context
+		(templater as any).addCommand({
+			id: templatePath,
+			name: `Insert ${templatePath}`,
+			callback: async () => {
+				const core = (templater as any).templater;
+				if (core) {
+					const file =
+						this.app.vault.getAbstractFileByPath(templatePath);
+					if (file instanceof TFile) {
+						if (core.write_template_to_active_file) {
+							await core.write_template_to_active_file(file);
+						} else if (core.append_template_to_active_file) {
+							await core.append_template_to_active_file(file);
+						} else {
+							// Fallback or log if method name is different
+							console.warn(
+								"Templater execution method not found",
+							);
+						}
+					}
+				}
+			},
+		});
 	}
 }

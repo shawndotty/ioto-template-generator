@@ -96,7 +96,6 @@ export class HotkeyService {
 	): Promise<void> {
 		const commandId = `templater-obsidian:${templatePath}`;
 		const hotkeyManager = (app as any).hotkeyManager;
-		console.dir(hotkeyManager);
 
 		if (hotkeyManager) {
 			try {
@@ -126,13 +125,36 @@ export class HotkeyService {
 					hotkeyManager.customKeys[commandId] = hotkeys;
 
 					// 5. Update runtime hotkeys (if command exists)
-					if (hotkeyManager.setHotkeys) {
-						hotkeyManager.setHotkeys(commandId, hotkeys);
-					}
+					// Wait for command to be registered
+					const maxRetries = 20;
+					const retryInterval = 100;
 
-					// 6. Save to disk (hotkeys.json) via Manager
-					hotkeyManager.save();
-					new Notice(`Hotkey added for ${commandId}`, 2000);
+					const applyHotkey = async (attempt: number) => {
+						const command = (app as any).commands.findCommand(
+							commandId,
+						);
+						if (command) {
+							if (hotkeyManager.setHotkeys) {
+								hotkeyManager.setHotkeys(commandId, hotkeys);
+							}
+							hotkeyManager.save();
+							console.log(`Hotkey applied for ${commandId}`);
+							new Notice(`Hotkey applied for ${commandId}`, 2000);
+						} else if (attempt < maxRetries) {
+							setTimeout(
+								() => applyHotkey(attempt + 1),
+								retryInterval,
+							);
+						} else {
+							console.warn(
+								`Command ${commandId} not found after ${maxRetries} attempts`,
+							);
+							// Even if command is not found yet, save the config
+							hotkeyManager.save();
+						}
+					};
+
+					applyHotkey(0);
 				}
 			} catch (error) {
 				console.error("Failed to add hotkey via manager", error);
