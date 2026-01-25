@@ -185,6 +185,12 @@ export class GeneratorView extends ItemView {
 
 		// Action Bar
 		const actionBar = this.middleContainer.createDiv({ cls: "action-bar" });
+		if (this.importedFile) {
+			actionBar.createEl("p", {
+				text: `${t("GENERATOR_VIEW_CURRENT_FILE")}: ${this.importedFile.name}`,
+				attr: { style: "width: 100%; margin: 0 0 10px 0" },
+			});
+		}
 		new ButtonComponent(actionBar)
 			.setButtonText(t("GENERATOR_VIEW_BTN_IMPORT_TEMPLATE"))
 			.setIcon("import")

@@ -1,4 +1,5 @@
 import { App, Modifier, Notice } from "obsidian";
+import { t } from "../lang/helpers";
 
 export interface HotkeyEntry {
 	modifiers: Modifier[];
@@ -140,6 +141,9 @@ export class HotkeyService {
 							hotkeyManager.save();
 							console.log(`Hotkey applied for ${commandId}`);
 							new Notice(`Hotkey applied for ${commandId}`, 2000);
+							new Notice(
+								t("HOTKEY_APPLIED_SUCCESSFULLY", [commandId]),
+							);
 						} else if (attempt < maxRetries) {
 							setTimeout(
 								() => applyHotkey(attempt + 1),

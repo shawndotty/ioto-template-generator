@@ -346,4 +346,6 @@ export default {
 	ADDED: `Added`,
 	TEMPLATES_TO_TEMPLATER_HOTKEYS: `templates to Templater hotkeys`,
 	TEMPLATES_ALREADY_EXIST: `All templates already exist in Templater hotkeys`,
+	HOTKEY_APPLIED_SUCCESSFULLY: "Hotkey applied successfully for ${commandId}",
+	GENERATOR_VIEW_CURRENT_FILE: `Current File`,
 };
