@@ -142,12 +142,14 @@ export class ScriptPreviewModal extends Modal {
 			);
 		}
 
-		previewSetting
-			.addButton((btn) => {
+		if (this.type === "Selector") {
+			previewSetting.addButton((btn) => {
 				this.hotkeyBtn = btn;
 				this.updateHotkeyButton();
 				btn.onClick(() => this.toggleHotkeyRecording());
-			})
+			});
+		}
+		previewSetting
 			.addButton((btn) => {
 				btn.setButtonText(t("SCRIPT_PREVIEW_BTN_MAXIMIZE")).onClick(
 					() => {
