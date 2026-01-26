@@ -251,7 +251,7 @@ if(noteSettings.addLinkToTDL) {
 		targetHeading: LTDList${usage}SectionHeading,
 		headingLevel: defaultTDLHeadingLevel,
 		tdlDateFormat: defaultTDLDateFormat,
-		followUpAction: parseInt(new${usage}NoteAddedToTDLFollowUpAction)
+		followUpAction: parseInt(noteSettings.addLinkToTDLFollowUpAction)
 	}
 	tR += await tp.user.IOTOAddLinkToTDL(tp, newNoteLink, addLinkToTDLSettings);
 } else {
