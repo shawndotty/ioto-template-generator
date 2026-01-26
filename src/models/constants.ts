@@ -83,6 +83,27 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Note",
 		valueType: "integer",
 		defaultValue: 0,
+		asSelector: true,
+		choices: [
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_0",
+				),
+				value: 0,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_1",
+				),
+				value: 1,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2",
+				),
+				value: 2,
+			},
+		],
 		description: t("INPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC"),
 		example: t("INPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
@@ -96,6 +117,27 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Note",
 		valueType: "integer",
 		defaultValue: 0,
+		asSelector: true,
+		choices: [
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_0",
+				),
+				value: 0,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_1",
+				),
+				value: 1,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2",
+				),
+				value: 2,
+			},
+		],
 		description: t("OUTPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC"),
 		example: t("OUTPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
@@ -109,6 +151,27 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Note",
 		valueType: "integer",
 		defaultValue: 0,
+		asSelector: true,
+		choices: [
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_0",
+				),
+				value: 0,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_1",
+				),
+				value: 1,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2",
+				),
+				value: 2,
+			},
+		],
 		description: t("OUTCOME_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC"),
 		example: t("OUTCOME_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
@@ -122,6 +185,27 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		level: "Note",
 		valueType: "integer",
 		defaultValue: 0,
+		asSelector: true,
+		choices: [
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_0",
+				),
+				value: 0,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_1",
+				),
+				value: 1,
+			},
+			{
+				label: t(
+					"DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2",
+				),
+				value: 2,
+			},
+		],
 		description: t("CUSTOM_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC"),
 		example: t("CUSTOM_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE"),
 		imageExplain: "",
