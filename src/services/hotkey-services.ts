@@ -139,10 +139,9 @@ export class HotkeyService {
 								hotkeyManager.setHotkeys(commandId, hotkeys);
 							}
 							hotkeyManager.save();
-							console.log(`Hotkey applied for ${commandId}`);
-							new Notice(`Hotkey applied for ${commandId}`, 2000);
 							new Notice(
 								t("HOTKEY_APPLIED_SUCCESSFULLY", [commandId]),
+								2000,
 							);
 						} else if (attempt < maxRetries) {
 							setTimeout(

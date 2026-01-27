@@ -360,7 +360,6 @@ export class ScriptPreviewModal extends Modal {
 						if (this.type === "Selector") {
 							// Try to add hotkey if configured
 							const hotkey = this.hotkey;
-							console.dir(this.hotkey);
 							if (
 								hotkey &&
 								typeof hotkey === "object" &&
