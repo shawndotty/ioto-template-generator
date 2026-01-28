@@ -11,6 +11,7 @@ export class ImportModal extends FuzzySuggestModal<TFile> {
 		extraFilter?: string[],
 	) {
 		super(app);
+		this.modalEl.addClass("import-modal");
 		this.onChoose = onChoose;
 		if (extraFilter) {
 			this.filterString = [...this.filterString, ...extraFilter];

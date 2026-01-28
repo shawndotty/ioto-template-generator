@@ -103,7 +103,7 @@ export class ScriptPreviewModal extends Modal {
 	}
 
 	onOpen() {
-		this.modalEl.addClass("mod-script-preview");
+		this.modalEl.addClass("script-preview-modal");
 		this.titleEl.setText(
 			`${t("SCRIPT_PREVIEW_TITLE")} - ${this.type} - ${this.usage}`,
 		);
