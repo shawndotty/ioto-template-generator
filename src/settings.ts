@@ -131,7 +131,7 @@ export class SettingTab extends PluginSettingTab {
 			.addButton((btn) =>
 				btn
 					.setIcon("folder")
-					.setTooltip("Choose a folder")
+					.setTooltip(t("CHOOSE_FOLDER"))
 					.onClick(() => {
 						new FolderPickerModal(
 							this.app,
@@ -162,7 +162,7 @@ export class SettingTab extends PluginSettingTab {
 			.addButton((btn) =>
 				btn
 					.setIcon("folder")
-					.setTooltip("Choose a folder")
+					.setTooltip(t("CHOOSE_FOLDER"))
 					.onClick(() => {
 						new FolderPickerModal(
 							this.app,
@@ -195,7 +195,7 @@ export class SettingTab extends PluginSettingTab {
 			.addButton((btn) =>
 				btn
 					.setIcon("folder")
-					.setTooltip("Choose a folder")
+					.setTooltip(t("CHOOSE_FOLDER"))
 					.onClick(() => {
 						new FolderPickerModal(
 							this.app,
