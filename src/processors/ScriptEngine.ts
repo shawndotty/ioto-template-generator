@@ -171,7 +171,7 @@ export class ScriptEngine {
 				templates +=
 					`\t${key}: ` +
 					(isInt
-						? `parseInt(${val})`
+						? `parseInt(${JSON.stringify(val)})`
 						: isTpl
 							? val.toString().replace(/[$\{\}]/g, "")
 							: JSON.stringify(val)) +
@@ -207,7 +207,7 @@ export class ScriptEngine {
 				templates +=
 					`\t${key}: ` +
 					(isInt
-						? `${val}`
+						? `parseInt(${JSON.stringify(val)})`
 						: isTpl
 							? val.toString().replace(/[$\{\}]/g, "")
 							: JSON.stringify(val)) +

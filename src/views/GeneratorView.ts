@@ -86,6 +86,34 @@ export class GeneratorView extends ItemView {
 		const leftCol = grid.createDiv({ cls: "sync-generator-left" });
 		this.renderUsageList(leftCol);
 
+		// Event Delegation for Usage List
+		leftCol.addEventListener("click", (e) => {
+			const target = (e.target as HTMLElement).closest(
+				".usage-item",
+			) as HTMLElement;
+			if (!target) return;
+
+			const type = target.dataset.type as TemplateType;
+			const usage = target.dataset.usage as Usage;
+
+			if (this.type === type && this.usage === usage) return;
+
+			this.type = type;
+			this.usage = usage;
+			// Reset imported file context when switching usages manually
+			this.importedFile = null;
+			this.folderSettings = {};
+			this.noteSettings = {};
+
+			leftCol
+				.findAll(".usage-item")
+				.forEach((el) => el.removeClass("is-active"));
+			target.addClass("is-active");
+			this.renderMiddleColumn();
+			this.activeOption = null;
+			this.renderRightColumn();
+		});
+
 		// Middle Column: Settings Form
 		this.middleContainer = grid.createDiv({ cls: "sync-generator-middle" });
 
@@ -156,23 +184,6 @@ export class GeneratorView extends ItemView {
 				});
 				if (u === this.usage && type === this.type)
 					item.addClass("is-active");
-
-				item.onclick = () => {
-					this.type = type;
-					this.usage = u;
-					// Reset imported file context when switching usages manually
-					this.importedFile = null;
-					this.folderSettings = {};
-					this.noteSettings = {};
-
-					container
-						.findAll(".usage-item")
-						.forEach((el) => el.removeClass("is-active"));
-					item.addClass("is-active");
-					this.renderMiddleColumn();
-					this.activeOption = null;
-					this.renderRightColumn();
-				};
 			});
 		});
 	}
