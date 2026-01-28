@@ -72,7 +72,7 @@ export class GeneratorView extends ItemView {
 	async onOpen() {
 		const container = this.contentEl;
 		container.empty();
-		container.addClass("sync-generator-container");
+		container.addClass("ioto-template-generator-container");
 
 		const grid = container.createDiv({ cls: "sync-generator-grid" });
 		if (this.platformListCollapsed) {
