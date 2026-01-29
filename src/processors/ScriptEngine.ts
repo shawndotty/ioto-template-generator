@@ -8,6 +8,7 @@ import {
 
 import { SWITCHERS_TEMPLATE_OPTIONS } from "../models/constantsSwitcher";
 import { Notice } from "obsidian";
+import { t } from "../lang/helpers";
 
 export class ScriptEngine {
 	static parseSelector(content: string): {
@@ -322,7 +323,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 
 		templates += header + "\n\n";
 
-		const foldOptions = SWITCHERS_TEMPLATE_OPTIONS.filter(
+		const folderOptions = SWITCHERS_TEMPLATE_OPTIONS.filter(
 			(o) => o.level === "Folder" && o.for === usage,
 		);
 
@@ -332,7 +333,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 		let defaultTemplate = "";
 		let defaultInclude = "";
 
-		foldOptions.forEach((opt) => {
+		folderOptions.forEach((opt) => {
 			const userVal = folderSettings[opt.name];
 			const defaultVal = opt.defaultValue;
 			const valueType = opt.valueType;
@@ -353,7 +354,7 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 					if ("outcome" === usedFor) {
 						Object.assign(
 							targetFrontmatter,
-							{ Status: "进行中" },
+							{ Status: t("ONGOING") },
 							val,
 						);
 					} else {
@@ -384,7 +385,6 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 
 				case "defaultTemplate":
 					defaultTemplate = val;
-					console.log(defaultTemplate);
 					defaultInclude = defaultTemplate
 						? `(await tp.file.include(\`[[${defaultTemplate}]]\`))`
 						: `defaultNoteTemplate`;
@@ -401,14 +401,32 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 
 		templates += switchersStr + "\n\n";
 
-		const footer = `
+		const footer1 = `
 const matched = switchers.find(item => prefix.includes(item.match));
-let includeNote = "";
+let includedNote = "";
 let defaultNoteTemplate = "";
 if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 	defaultNoteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefault${usage}NoteTemplate"))
-}
-if (matched) {
+}`;
+
+		templates += footer1 + "\n\n";
+
+		let footer2 = "";
+
+		switch (usedFor) {
+			case "task":
+				footer2 = `if (matched && !tp.file.title.includes(ml.t("Subject"))) {
+	const matchedTemplate = tp.file.find_tfile(matched.template);
+	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
+} else if(tp.file.title.includes(ml.t("Subject"))) {
+	includedNote = "";
+} else {
+	includedNote = ${defaultInclude};
+}`;
+				break;
+
+			default:
+				footer2 = `if (matched) {
 	const matchedTemplate = tp.file.find_tfile(matched.template);
 	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
 } else {
@@ -416,8 +434,10 @@ if (matched) {
 }
 
 tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
+				break;
+		}
 
-		templates += footer;
+		templates += footer2 + "\n\n";
 
 		let finalTemplate = "<%*\n" + templates + "\n_%>";
 

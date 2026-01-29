@@ -361,4 +361,5 @@ export default {
 	DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2: `Embed TDL Item For Note`,
 
 	CHOOSE_FOLDER: `Choose a folder`,
+	ONGOING: `Ongoing`,
 };

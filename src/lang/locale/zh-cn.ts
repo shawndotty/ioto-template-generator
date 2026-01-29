@@ -357,4 +357,5 @@ export default {
 	DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2: `在笔记中嵌入TDL中的任务条目`,
 
 	CHOOSE_FOLDER: `选择文件夹`,
+	ONGOING: `进行中`,
 };
