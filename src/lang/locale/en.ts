@@ -362,4 +362,7 @@ export default {
 
 	CHOOSE_FOLDER: `Choose a folder`,
 	ONGOING: `Ongoing`,
+	SELECTOR_FOLDER_NAME: `SelectorTemplates`,
+	SWITCHER_FOLDER_NAME: `SwitcherTemplates`,
+	NOTE_TEMPLATES_FOLDER_NAME: `NoteTemplates`,
 };

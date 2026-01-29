@@ -99,9 +99,9 @@ export default class IOTOTemplateGenerator extends Plugin {
 			const base = iotoSettings?.extraFolder;
 			if (base) {
 				const paths = {
-					selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/选择器模板`,
-					switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/切换器模板`,
-					noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/笔记模板`,
+					selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SELECTOR_FOLDER_NAME")}`,
+					switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SWITCHER_FOLDER_NAME")}`,
+					noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("NOTE_TEMPLATES_FOLDER_NAME")}`,
 				} as const;
 
 				(Object.keys(paths) as Array<keyof typeof paths>).forEach(

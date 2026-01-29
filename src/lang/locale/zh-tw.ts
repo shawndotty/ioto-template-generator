@@ -357,4 +357,7 @@ export default {
 	DEFAULT_NEW_NOTE_ADDED_TO_TDL_FOLLOW_UP_ACTION_OPTION_2: `在筆記中嵌入TDL中的任務條目`,
 	CHOOSE_FOLDER: `選擇資料夾`,
 	ONGOING: `進行中`,
+	SELECTOR_FOLDER_NAME: `選擇器範本`,
+	SWITCHER_FOLDER_NAME: `切換器範本`,
+	NOTE_TEMPLATES_FOLDER_NAME: `選擇器範本`,
 };
