@@ -15,6 +15,7 @@ import {
 import { GENERATOR_VIEW_TYPE } from "./models/constants";
 import { GeneratorView } from "views/GeneratorView";
 import { t } from "./lang/helpers";
+import { IotoSettingsService } from "services/ioto-settings-services";
 
 // Remember to rename these classes and interfaces!
 
@@ -89,6 +90,29 @@ export default class IOTOTemplateGenerator extends Plugin {
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<IOTOTemplateGeneratorSettings>,
 		);
+
+		const iotoSettingsService = new IotoSettingsService(this.app);
+
+		// 统一获取 IOTO 设置，避免重复调用
+		if (iotoSettingsService.isAvailable()) {
+			const iotoSettings = iotoSettingsService.getSettings();
+			const base = iotoSettings?.extraFolder;
+			if (base) {
+				const paths = {
+					selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/选择器模板`,
+					switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/切换器模板`,
+					noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/笔记模板`,
+				} as const;
+
+				(Object.keys(paths) as Array<keyof typeof paths>).forEach(
+					(key) => {
+						if (!this.settings[key]) {
+							this.settings[key] = paths[key];
+						}
+					},
+				);
+			}
+		}
 	}
 
 	async saveSettings() {
