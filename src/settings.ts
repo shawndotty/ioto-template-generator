@@ -5,7 +5,6 @@ import { t } from "./lang/helpers";
 import { TabbedSettings } from "ui/tabbed-settings";
 import { FolderPickerModal } from "ui/pickers/folder-picker";
 import { FilePickerModal } from "ui/pickers/file-picker";
-import { IotoSettingsService } from "services/ioto-settings-services";
 
 export interface IOTOTemplateGeneratorSettings {
 	mySetting: string;
