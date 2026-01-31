@@ -380,7 +380,17 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 					frontmatterStr += "};";
 					break;
 				case "switchers":
-					switchersStr += `const switchers = ${JSON.stringify(val, null, "\t")};\n`;
+					let switchersJson = JSON.stringify(val, null, "\t");
+					switchersJson = switchersJson.replace(
+						/"(template|match)":\s*"((?:[^"\\]|\\.)*)"/g,
+						(_, key, val) => {
+							const content = val
+								.replace(/\\"/g, '"')
+								.replace(/`/g, "\\`");
+							return `"${key}": \`${content}\``;
+						},
+					);
+					switchersStr += `const switchers = ${switchersJson};\n`;
 					break;
 
 				case "defaultTemplate":
