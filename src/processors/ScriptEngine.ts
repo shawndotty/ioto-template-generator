@@ -452,7 +452,7 @@ tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
 		let finalTemplate = "<%*\n" + templates + "\n_%>";
 
 		const taskAppended = `\n
-<%*\nif (tp.file.title.includes("未命名") || tp.file.title.toLowerCase().includes("untitle")) {
+<%*\nif (tp.file.title.toLowerCase().includes(ml.t("Untitle"))) {
 	await tp.file.rename(projectName + "-" + tp.date.now(defaultTDLDateFormat));
 }\n_%>`;
 
