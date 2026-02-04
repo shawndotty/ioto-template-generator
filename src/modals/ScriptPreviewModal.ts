@@ -207,10 +207,54 @@ export class ScriptPreviewModal extends Modal {
 						}
 						this.close();
 
+						// Add Hotkey
+						if (this.type === "Selector") {
+							// Try to add hotkey if configured
+							const hotkey = this.hotkey;
+							if (
+								hotkey &&
+								typeof hotkey === "object" &&
+								hotkey.key
+							) {
+								try {
+									const modifiers = (hotkey.modifiers || [
+										"Alt",
+									]) as Modifier[];
+									const key = hotkey.key as string;
+
+									// 1. Add to Templater
+									const templaterService =
+										new TemplaterServices(this.app);
+									await templaterService.addTemplaterHotkeys([
+										this.targetFilePath,
+									]);
+
+									// 2. Add hotkey
+									await HotkeyService.addTemplaterHotkey(
+										this.app,
+										this.targetFilePath,
+										modifiers,
+										key,
+									);
+								} catch (error) {
+									console.error(
+										"Failed to add hotkey",
+										error,
+									);
+								}
+							}
+						}
+
+						// Create Switcher Template
 						if (this.type === "Selector") {
 							const switcherTemplateName =
 								this.noteSettings?.template || "";
-							if (!switcherTemplateName) return;
+							console.log(switcherTemplateName);
+							if (
+								!switcherTemplateName ||
+								switcherTemplateName === "${switcherTemplate}"
+							)
+								return;
 
 							const existingFile =
 								this.app.metadataCache.getFirstLinkpathDest(
@@ -282,6 +326,7 @@ export class ScriptPreviewModal extends Modal {
 							}
 						}
 
+						// Edit Switcher Template
 						if (this.type === "Switcher") {
 							const switchers =
 								this.folderSettings?.switchers || [];
@@ -354,43 +399,6 @@ export class ScriptPreviewModal extends Modal {
 										},
 									),
 								);
-							}
-						}
-
-						if (this.type === "Selector") {
-							// Try to add hotkey if configured
-							const hotkey = this.hotkey;
-							if (
-								hotkey &&
-								typeof hotkey === "object" &&
-								hotkey.key
-							) {
-								try {
-									const modifiers = (hotkey.modifiers || [
-										"Alt",
-									]) as Modifier[];
-									const key = hotkey.key as string;
-
-									// 1. Add to Templater
-									const templaterService =
-										new TemplaterServices(this.app);
-									await templaterService.addTemplaterHotkeys([
-										this.targetFilePath,
-									]);
-
-									// 2. Add hotkey
-									await HotkeyService.addTemplaterHotkey(
-										this.app,
-										this.targetFilePath,
-										modifiers,
-										key,
-									);
-								} catch (error) {
-									console.error(
-										"Failed to add hotkey",
-										error,
-									);
-								}
 							}
 						}
 					});
