@@ -6,7 +6,12 @@ import {
 	Notice,
 	DropdownComponent,
 } from "obsidian";
-import { ConfigPreset, Usage, TemplateGeneratorSettings } from "../types/types";
+import {
+	ConfigPreset,
+	Usage,
+	TemplateType,
+	TemplateGeneratorSettings,
+} from "../types/types";
 import { t } from "../lang/helpers";
 
 export class PresetSaveModal extends Modal {
@@ -18,7 +23,7 @@ export class PresetSaveModal extends Modal {
 		app: App,
 		presets: ConfigPreset[],
 		currentSettings: TemplateGeneratorSettings,
-		onSavePreset: (preset: ConfigPreset) => void
+		onSavePreset: (preset: ConfigPreset) => void,
 	) {
 		super(app);
 		this.presets = presets;
@@ -45,8 +50,22 @@ export class PresetSaveModal extends Modal {
 		nameInput.inputEl.style.marginBottom = "10px";
 		nameInput.setPlaceholder(t("PRESET_MANAGER_SAVE_PLACEHOLDER"));
 
-		const usageDropdown = new DropdownComponent(saveContainer);
-		usageDropdown.selectEl.style.width = "100%";
+		const optionsContainer = saveSection.createDiv({
+			cls: "preset-save-options",
+		});
+
+		optionsContainer.addClass("preset-save-options-container");
+
+		const typeDropdown = new DropdownComponent(optionsContainer);
+
+		typeDropdown.selectEl.style.marginBottom = "10px";
+		const types: TemplateType[] = ["Selector", "Switcher"];
+
+		typeDropdown.addOptions(Object.fromEntries(types.map((p) => [p, p])));
+		typeDropdown.setValue(this.currentSettings.for);
+
+		const usageDropdown = new DropdownComponent(optionsContainer);
+
 		usageDropdown.selectEl.style.marginBottom = "10px";
 		const usages: Usage[] = [
 			"Input",
@@ -58,7 +77,7 @@ export class PresetSaveModal extends Modal {
 		usageDropdown.addOptions(Object.fromEntries(usages.map((p) => [p, p])));
 		usageDropdown.setValue(this.currentSettings.usage);
 
-		const saveButton = new ButtonComponent(saveContainer);
+		const saveButton = new ButtonComponent(optionsContainer);
 		saveButton.setButtonText(t("PRESET_MANAGER_SAVE_BTN")).setCta();
 		saveButton.onClick(() => {
 			const name = nameInput.getValue().trim();
@@ -77,6 +96,7 @@ export class PresetSaveModal extends Modal {
 				id: Math.random().toString(36).substr(2, 9),
 				name,
 				usage: usageDropdown.getValue() as Usage,
+				for: this.currentSettings.for,
 				folderSettings: { ...this.currentSettings.folderSettings },
 				noteSettings: { ...this.currentSettings.noteSettings },
 				// Deep copy
@@ -86,7 +106,7 @@ export class PresetSaveModal extends Modal {
 
 			this.onSavePreset(preset);
 			new Notice(
-				t("PRESET_MANAGER_NOTICE_SAVED").replace("${name}", name)
+				t("PRESET_MANAGER_NOTICE_SAVED").replace("${name}", name),
 			);
 			this.close();
 		});

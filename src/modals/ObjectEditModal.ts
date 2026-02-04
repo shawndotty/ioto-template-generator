@@ -27,7 +27,7 @@ export class ObjectEditModal extends Modal {
 		app: App,
 		title: string,
 		data: Record<string, any>,
-		onSave: (result: Record<string, any>) => void
+		onSave: (result: Record<string, any>) => void,
 	) {
 		super(app);
 		this.title = title;
@@ -65,7 +65,6 @@ export class ObjectEditModal extends Modal {
 			cls: "object-edit-items",
 		});
 
-		// Render existing items
 		this.renderItems(itemsContainer);
 
 		// Footer Actions
@@ -198,7 +197,7 @@ export class ObjectEditModal extends Modal {
 							(newArray) => {
 								item.value = newArray;
 								arrayInput.setValue(JSON.stringify(newArray));
-							}
+							},
 						).open();
 					});
 			} else if (item.type === "number") {

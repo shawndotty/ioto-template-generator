@@ -49,7 +49,7 @@ export class PresetLoadModal extends Modal {
 		app: App,
 		presets: ConfigPreset[],
 		onLoadPreset: (preset: ConfigPreset) => void,
-		onDeletePreset: (presetId: string) => void
+		onDeletePreset: (presetId: string) => void,
 	) {
 		super(app);
 		this.presets = presets;
@@ -108,10 +108,20 @@ export class PresetLoadModal extends Modal {
 					const presetInfo = presetItem.createDiv({
 						cls: "preset-info",
 					});
+
 					presetInfo.createEl("div", {
 						text: preset.name,
 						cls: "preset-name",
 					});
+
+					presetInfo.createEl("span", {
+						text: preset.for,
+						cls: "help-badge",
+						attr: {
+							style: "margin-bottom: 0px;",
+						},
+					});
+
 					presetInfo.createEl("div", {
 						text: new Date(preset.updatedAt).toLocaleDateString(),
 						cls: "preset-date",
@@ -130,8 +140,8 @@ export class PresetLoadModal extends Modal {
 						new Notice(
 							t("PRESET_MANAGER_NOTICE_LOADED").replace(
 								"${name}",
-								preset.name
-							)
+								preset.name,
+							),
 						);
 						this.close();
 					});
@@ -142,7 +152,7 @@ export class PresetLoadModal extends Modal {
 						.setWarning();
 					deleteBtn.onClick(() => {
 						const message = t(
-							"PRESET_MANAGER_CONFIRM_DELETE"
+							"PRESET_MANAGER_CONFIRM_DELETE",
 						).replace("${name}", preset.name);
 
 						new PresetDeleteConfirmModal(this.app, message, () => {
@@ -150,8 +160,8 @@ export class PresetLoadModal extends Modal {
 							new Notice(
 								t("PRESET_MANAGER_NOTICE_DELETED").replace(
 									"${name}",
-									preset.name
-								)
+									preset.name,
+								),
 							);
 							this.close();
 						}).open();
