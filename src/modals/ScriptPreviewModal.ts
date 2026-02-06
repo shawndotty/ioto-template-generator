@@ -438,12 +438,18 @@ export class ScriptPreviewModal extends Modal {
 	startRecording() {
 		this.isRecordingHotkey = true;
 		this.updateHotkeyButton();
-		document.addEventListener("keydown", this.handleKeyDown);
+		this.contentEl.ownerDocument.addEventListener(
+			"keydown",
+			this.handleKeyDown,
+		);
 	}
 
 	stopRecording() {
 		this.isRecordingHotkey = false;
-		document.removeEventListener("keydown", this.handleKeyDown);
+		this.contentEl.ownerDocument.removeEventListener(
+			"keydown",
+			this.handleKeyDown,
+		);
 		this.updateHotkeyButton();
 	}
 
@@ -519,7 +525,10 @@ export class ScriptPreviewModal extends Modal {
 	};
 
 	onClose() {
-		document.removeEventListener("keydown", this.handleKeyDown);
+		this.contentEl.ownerDocument.removeEventListener(
+			"keydown",
+			this.handleKeyDown,
+		);
 		this.contentEl.empty();
 	}
 }
