@@ -345,7 +345,7 @@ export default {
 	ADD_LINK_TO_TDL_FOLLOW_UP_ACTION: `當在TDL中自動添加新筆記時的後續操作`,
 	INPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `當輸入筆記被自動添加到當前TDL時的後續操作：\n\n輸入0：你將被詢問接下來要做什麼。\n輸入1：插入筆記連結。\n輸入2：為筆記嵌入TDL條目。`,
 	OUTPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `當輸出筆記被自動添加到當前TDL時的後續操作：\n\n輸入0：你將被詢問接下來要做什麼。\n輸入1：插入筆記連結。\n輸入2：為筆記嵌入TDL條目。`,
-	OUTCOME_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `當結果筆記被自動添加到當前TDL時的後續操作：\n\n輸入0：系統會詢問您下一步要做什麼。\n輸入1：插入筆記連結。\n輸入2：為筆記嵌入TDL條目。`,
+	OUTCOME_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `當成果筆記被自動添加到當前TDL時的後續操作：\n\n輸入0：系統會詢問您下一步要做什麼。\n輸入1：插入筆記連結。\n輸入2：為筆記嵌入TDL條目。`,
 	CUSTOM_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `當自定義筆記被自動添加到當前TDL時的後續操作：\n\n輸入0：你將被詢問下一步要做什麼。\n輸入1：插入筆記連結。\n輸入2：為筆記嵌入TDL條目。`,
 	INPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE: `0`,
 	OUTPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE: `0`,

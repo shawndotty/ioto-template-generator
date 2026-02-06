@@ -345,7 +345,7 @@ export default {
 	ADD_LINK_TO_TDL_FOLLOW_UP_ACTION: `当在TDL中自动添加新笔记时的后续操作`,
 	INPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `当输入笔记被自动添加到当前TDL时的后续操作：\n\n输入0：你将被询问接下来要做什么。\n输入1：插入笔记链接。\n输入2：为笔记嵌入TDL条目。`,
 	OUTPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `当输出笔记被自动添加到当前TDL时的后续操作：\n\n输入0：你将被询问接下来要做什么。\n输入1：插入笔记链接。\n输入2：为笔记嵌入TDL条目。`,
-	OUTCOME_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `当结果笔记被自动添加到当前TDL时的后续操作：\n\n输入0：系统会询问您下一步要做什么。\n输入1：插入笔记链接。\n输入2：为笔记嵌入TDL条目。`,
+	OUTCOME_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `当成果笔记被自动添加到当前TDL时的后续操作：\n\n输入0：系统会询问您下一步要做什么。\n输入1：插入笔记链接。\n输入2：为笔记嵌入TDL条目。`,
 	CUSTOM_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_DESC: `当自定义笔记被自动添加到当前TDL时的后续操作：\n\n输入0：你将被询问下一步要做什么。\n输入1：插入笔记链接。\n输入2：为笔记嵌入TDL条目。`,
 	INPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE: `0`,
 	OUTPUT_ADD_LINK_TO_TDL_FOLLOW_UP_ACTION_EXAMPLE: `0`,
