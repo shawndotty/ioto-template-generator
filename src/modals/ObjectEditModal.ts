@@ -14,7 +14,7 @@ interface ObjectItem {
 	id: string;
 	key: string;
 	value: any;
-	type: "string" | "number" | "boolean" | "array";
+	type: "string" | "number" | "boolean" | "array" | "date" | "datetime";
 }
 
 export class ObjectEditModal extends Modal {
@@ -38,10 +38,27 @@ export class ObjectEditModal extends Modal {
 
 	private parseDataToItems(data: Record<string, any>): ObjectItem[] {
 		return Object.entries(data).map(([key, value]) => {
-			let type: "string" | "number" | "boolean" | "array" = "string";
+			let type:
+				| "string"
+				| "number"
+				| "boolean"
+				| "array"
+				| "date"
+				| "datetime" = "string";
 			if (Array.isArray(value)) type = "array";
 			else if (typeof value === "boolean") type = "boolean";
 			else if (typeof value === "number") type = "number";
+			else if (value instanceof Date)
+				type = "date"; // Default to date if it's a Date object, can't easily distinguish unless we check hours/mins
+			else if (typeof value === "string") {
+				if (/^\d{4}-\d{2}-\d{2}$/.test(value)) type = "date";
+				else if (
+					/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?/.test(
+						value,
+					)
+				)
+					type = "datetime";
+			}
 
 			return {
 				id: Math.random().toString(36).substr(2, 9),
@@ -131,6 +148,8 @@ export class ObjectEditModal extends Modal {
 					number: t("OBJECT_EDIT_TYPE_NUMBER"),
 					boolean: t("OBJECT_EDIT_TYPE_BOOLEAN"),
 					array: t("OBJECT_EDIT_TYPE_ARRAY"),
+					date: t("OBJECT_EDIT_TYPE_DATE"),
+					datetime: t("OBJECT_EDIT_TYPE_DATETIME"),
 				})
 				.setValue(item.type)
 				.onChange((val) => {
@@ -138,13 +157,19 @@ export class ObjectEditModal extends Modal {
 						| "string"
 						| "number"
 						| "boolean"
-						| "array";
+						| "array"
+						| "date"
+						| "datetime";
 					if (newType !== item.type) {
 						item.type = newType;
 						// Reset value to default for new type
 						if (newType === "array") item.value = [];
 						else if (newType === "boolean") item.value = false;
 						else if (newType === "number") item.value = 0;
+						else if (newType === "date")
+							item.value = new Date().toISOString().split("T")[0];
+						else if (newType === "datetime")
+							item.value = new Date().toISOString().slice(0, 16);
 						else item.value = "";
 
 						// Re-render this row or whole list? Re-rendering list is safer/easier
@@ -188,7 +213,7 @@ export class ObjectEditModal extends Modal {
 
 				new ButtonComponent(valueContainer)
 					.setIcon("pencil")
-					.setTooltip("Open Array Editor")
+					.setTooltip(t("OBJECT_EDIT_TOOLTIP_OPEN_ARRAY_EDITOR"))
 					.onClick(() => {
 						new ArrayEditModal(
 							this.app,
@@ -211,13 +236,40 @@ export class ObjectEditModal extends Modal {
 					.onChange((val) => {
 						item.value = Number(val);
 					});
+			} else if (item.type === "date") {
+				const dateInput = new TextComponent(valueContainer);
+				dateInput.inputEl.type = "date";
+				dateInput.inputEl.addClass("object-edit-value");
+				dateInput.inputEl.style.width = "100%";
+
+				let val = item.value;
+				if (val instanceof Date) {
+					val = val.toISOString().split("T")[0];
+				}
+				dateInput.setValue(String(val)).onChange((val) => {
+					item.value = val;
+				});
+			} else if (item.type === "datetime") {
+				const dateInput = new TextComponent(valueContainer);
+				dateInput.inputEl.type = "datetime-local";
+				dateInput.inputEl.addClass("object-edit-value");
+				dateInput.inputEl.style.width = "100%";
+
+				let val = item.value;
+				if (val instanceof Date) {
+					// datetime-local needs YYYY-MM-DDTHH:mm
+					val = val.toISOString().slice(0, 16);
+				}
+				dateInput.setValue(String(val)).onChange((val) => {
+					item.value = val;
+				});
 			} else {
 				// String
 				const strInput = new TextComponent(valueContainer);
 				strInput.inputEl.addClass("object-edit-value");
 				strInput.inputEl.style.width = "100%";
 				strInput
-					.setPlaceholder("Value")
+					.setPlaceholder(t("OBJECT_EDIT_PLACEHOLDER_VALUE"))
 					.setValue(String(item.value))
 					.onChange((val) => {
 						item.value = val;
@@ -227,7 +279,7 @@ export class ObjectEditModal extends Modal {
 			// Delete Button
 			const delBtn = new ButtonComponent(row)
 				.setIcon("trash")
-				.setTooltip("Delete");
+				.setTooltip(t("OBJECT_EDIT_TOOLTIP_DELETE"));
 			delBtn.buttonEl.classList.add("clickable-icon", "danger-icon");
 			delBtn.onClick(() => {
 				this.items.splice(index, 1);
