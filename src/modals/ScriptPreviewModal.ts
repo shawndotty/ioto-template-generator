@@ -339,7 +339,11 @@ export class ScriptPreviewModal extends Modal {
 										}: {
 											template: string;
 										}) => {
-											if (!template) return;
+											if (
+												!template ||
+												template.includes("${")
+											)
+												return;
 											const exists =
 												this.app.metadataCache.getFirstLinkpathDest(
 													template,
