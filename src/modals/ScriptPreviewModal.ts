@@ -85,7 +85,7 @@ export class ScriptPreviewModal extends Modal {
 			if (this.type === "Selector") {
 				this.templateName = `${prefix}TP-${t("Selector")}-${t("Create") + templateUsage}-${Date.now()}`;
 			} else {
-				this.templateName = `${prefix}-${templateUsage}-${t("Switcher")}-${t("Create")}${this.usage === "Task" ? t("TaskList") : templateUsage + t("Note")}-${Date.now()}`;
+				this.templateName = `${prefix}TP-${templateUsage}-${t("Switcher")}-${t("Create")}${this.usage === "Task" ? t("TaskList") : templateUsage + t("Note")}-${Date.now()}`;
 			}
 		}
 	}
