@@ -20,14 +20,14 @@ export class ScriptEngine {
 		let usage: Usage | null = null;
 		let type: TemplateType | null = null;
 
-		const typeMatch = content.match(/\*\* type: (\w+)\n/);
+		const typeMatch = content.match(/\*\* type: (\w+)\r?\n/);
 		if (typeMatch) {
 			type = this.convertFirstLetterToUpperCase(
 				typeMatch[1] || "",
 			) as TemplateType;
 		}
 
-		const usageMatch = content.match(/\*\* for: (\w+)\n/);
+		const usageMatch = content.match(/\*\* for: (\w+)\r?\n/);
 		if (usageMatch) {
 			usage = this.convertFirstLetterToUpperCase(
 				usageMatch[1] || "",
@@ -65,14 +65,14 @@ export class ScriptEngine {
 		let usage: Usage | null = null;
 		let type: TemplateType | null = null;
 
-		const typeMatch = content.match(/\*\* type: (\w+)\n/);
+		const typeMatch = content.match(/\*\* type: (\w+)\r?\n/);
 		if (typeMatch) {
 			type = this.convertFirstLetterToUpperCase(
 				typeMatch[1] || "",
 			) as TemplateType;
 		}
 
-		const usageMatch = content.match(/\*\* for: (\w+)\n/);
+		const usageMatch = content.match(/\*\* for: (\w+)\r?\n/);
 		if (usageMatch) {
 			usage = this.convertFirstLetterToUpperCase(
 				usageMatch[1] || "",
