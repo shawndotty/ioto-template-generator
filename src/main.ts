@@ -23,27 +23,37 @@ export default class IOTOTemplateGenerator extends Plugin {
 	settings: IOTOTemplateGeneratorSettings;
 
 	async onload() {
-		await this.loadSettings();
+		try {
+			await this.loadSettings();
 
-		this.registerView(
-			GENERATOR_VIEW_TYPE,
-			(leaf) => new GeneratorView(leaf, this),
-		);
+			this.registerView(
+				GENERATOR_VIEW_TYPE,
+				(leaf) => new GeneratorView(leaf, this),
+			);
 
-		this.addRibbonIcon(
-			"package",
-			t("MAIN_RIBBON_GENERATOR"),
-			(evt: MouseEvent) => {
-				if (evt.shiftKey) {
-					this.activateView(true);
-				} else {
-					this.activateView();
-				}
-			},
-		);
+			this.addRibbonIcon(
+				"package",
+				t("MAIN_RIBBON_GENERATOR"),
+				(evt: MouseEvent) => {
+					if (evt.shiftKey) {
+						this.activateView(true);
+					} else {
+						this.activateView();
+					}
+				},
+			);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SettingTab(this.app, this));
+			// This adds a settings tab so the user can configure various aspects of the plugin
+			this.addSettingTab(new SettingTab(this.app, this));
+		} catch (error) {
+			console.error(
+				"IOTO Template Generator: Failed to load plugin",
+				error,
+			);
+			new Notice(
+				"IOTO Template Generator: Failed to load plugin. Check console for details.",
+			);
+		}
 	}
 
 	onunload() {}
@@ -94,24 +104,31 @@ export default class IOTOTemplateGenerator extends Plugin {
 		const iotoSettingsService = new IotoSettingsService(this.app);
 
 		// 统一获取 IOTO 设置，避免重复调用
-		if (iotoSettingsService.isAvailable()) {
-			const iotoSettings = iotoSettingsService.getSettings();
-			const base = iotoSettings?.extraFolder;
-			if (base) {
-				const paths = {
-					selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SELECTOR_FOLDER_NAME")}`,
-					switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SWITCHER_FOLDER_NAME")}`,
-					noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("NOTE_TEMPLATES_FOLDER_NAME")}`,
-				} as const;
+		try {
+			if (iotoSettingsService.isAvailable()) {
+				const iotoSettings = iotoSettingsService.getSettings();
+				const base = iotoSettings?.extraFolder;
+				if (base) {
+					const paths = {
+						selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SELECTOR_FOLDER_NAME")}`,
+						switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SWITCHER_FOLDER_NAME")}`,
+						noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("NOTE_TEMPLATES_FOLDER_NAME")}`,
+					} as const;
 
-				(Object.keys(paths) as Array<keyof typeof paths>).forEach(
-					(key) => {
-						if (!this.settings[key]) {
-							this.settings[key] = paths[key];
-						}
-					},
-				);
+					(Object.keys(paths) as Array<keyof typeof paths>).forEach(
+						(key) => {
+							if (!this.settings[key]) {
+								this.settings[key] = paths[key];
+							}
+						},
+					);
+				}
 			}
+		} catch (error) {
+			console.warn(
+				"IOTO Template Generator: Failed to load IOTO Settings",
+				error,
+			);
 		}
 	}
 

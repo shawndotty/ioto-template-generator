@@ -52,7 +52,12 @@ export class IotoSettingsService {
 	 * Get the IOTO Settings plugin instance if available
 	 */
 	private getPlugin(): IotoSettingsPlugin | undefined {
-		return this.app.plugins.plugins["ioto-settings"] as
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const app = this.app as any;
+		if (!app.plugins || !app.plugins.plugins) {
+			return undefined;
+		}
+		return app.plugins.plugins["ioto-settings"] as
 			| IotoSettingsPlugin
 			| undefined;
 	}
