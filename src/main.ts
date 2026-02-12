@@ -95,40 +95,44 @@ export default class IOTOTemplateGenerator extends Plugin {
 	}
 
 	async loadSettings() {
+		const loadedData = await this.loadData();
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<IOTOTemplateGeneratorSettings>,
+			loadedData as Partial<IOTOTemplateGeneratorSettings>,
 		);
 
-		const iotoSettingsService = new IotoSettingsService(this.app);
+		// Only load from IOTO Settings if data.json does not exist (fresh install)
+		if (!loadedData) {
+			const iotoSettingsService = new IotoSettingsService(this.app);
 
-		// 统一获取 IOTO 设置，避免重复调用
-		try {
-			if (iotoSettingsService.isAvailable()) {
-				const iotoSettings = iotoSettingsService.getSettings();
-				const base = iotoSettings?.extraFolder;
-				if (base) {
-					const paths = {
-						selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SELECTOR_FOLDER_NAME")}`,
-						switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SWITCHER_FOLDER_NAME")}`,
-						noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("NOTE_TEMPLATES_FOLDER_NAME")}`,
-					} as const;
+			// 统一获取 IOTO 设置，避免重复调用
+			try {
+				if (iotoSettingsService.isAvailable()) {
+					const iotoSettings = iotoSettingsService.getSettings();
+					const base = iotoSettings?.extraFolder;
+					if (base) {
+						const paths = {
+							selectorFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SELECTOR_FOLDER_NAME")}`,
+							switcherFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("SWITCHER_FOLDER_NAME")}`,
+							noteTemplatesFolderPath: `${base}/IOTO/Templates/Templater/MyIOTO/${t("NOTE_TEMPLATES_FOLDER_NAME")}`,
+						} as const;
 
-					(Object.keys(paths) as Array<keyof typeof paths>).forEach(
-						(key) => {
+						(
+							Object.keys(paths) as Array<keyof typeof paths>
+						).forEach((key) => {
 							if (!this.settings[key]) {
 								this.settings[key] = paths[key];
 							}
-						},
-					);
+						});
+					}
 				}
+			} catch (error) {
+				console.warn(
+					"IOTO Template Generator: Failed to load IOTO Settings",
+					error,
+				);
 			}
-		} catch (error) {
-			console.warn(
-				"IOTO Template Generator: Failed to load IOTO Settings",
-				error,
-			);
 		}
 	}
 
