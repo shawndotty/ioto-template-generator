@@ -288,7 +288,9 @@ const ml = new (tp.user.IOTOMultiLangs(tp))(tp);
 const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
-const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter?.Project;`;
+const activeFileFrontmatter = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter;
+const projectName = activeFileFrontmatter?.Project;
+const subjectName = activeFileFrontmatter?.Subject;`;
 				break;
 			case "outcome":
 				header = `
@@ -297,7 +299,9 @@ const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
 const {projectNameFormat} = app.plugins.plugins["ioto-settings"].settings;
-const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);`;
+const activeFileFrontmatter = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter;
+const projectName = activeFileFrontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);
+const subjectName = activeFileFrontmatter?.Subject;`;
 				break;
 			case "task":
 				header = `
@@ -315,7 +319,9 @@ const utilClass = tp.user.IOTOUtility(tp, app);
 const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
 const {projectNameFormat} = app.plugins.plugins["ioto-settings"].settings;
-const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);`;
+const activeFileFrontmatter = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter;
+const projectName = activeFileFrontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);
+const subjectName = activeFileFrontmatter?.Subject;`;
 				break;
 			default:
 				break;
@@ -355,6 +361,12 @@ const projectName = app.metadataCache.getFileCache(tp.config.active_file)?.front
 						Object.assign(
 							targetFrontmatter,
 							{ Status: t("ONGOING") },
+							val,
+						);
+					} else if (usedFor === "task") {
+						Object.assign(
+							targetFrontmatter,
+							{ cssclasses: ["hideProperties", "iotoTDL"] },
 							val,
 						);
 					} else {
@@ -429,6 +441,7 @@ if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 	const matchedTemplate = tp.file.find_tfile(matched.template);
 	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
 } else if(tp.file.title.includes(ml.t("Subject"))) {
+	frontMatter.Subject = tp.file.title.split("-").last();
 	includedNote = "";
 } else {
 	includedNote = ${defaultInclude};
@@ -436,7 +449,10 @@ if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 				break;
 
 			default:
-				footer2 = `if (matched) {
+				footer2 = `if (subjectName) {
+    frontMatter.Subject = \`["\$\{subjectName\}"]\`;
+}
+if (matched) {
 	const matchedTemplate = tp.file.find_tfile(matched.template);
 	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
 } else {
