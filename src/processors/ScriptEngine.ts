@@ -459,7 +459,7 @@ if (matched) {
 	includedNote = ${defaultInclude};
 }
 
-tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
+tR += util.noteFrontMatterCooker(util.addIOOLinkPropertyToFrontMatter(frontMatter, tp.config.active_file), includedNote);`;
 				break;
 		}
 
