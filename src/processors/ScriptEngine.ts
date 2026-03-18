@@ -239,7 +239,7 @@ if(folderSettings.showSubFolders) {
 			case "Custom":
 				finalAction = `const newNoteLink = await tp.user.IOTOCreateOrOpenNote(tp, tR, folderPath, noteSettings);\n\n`;
 
-				finalAction += `tR += newNoteLink;` + "\n\n";
+				finalAction += `tR += newNoteLink.tR;` + "\n\n";
 
 				break;
 			default:
@@ -256,7 +256,7 @@ if(noteSettings.addLinkToTDL) {
 	}
 	tR += await tp.user.IOTOAddLinkToTDL(tp, newNoteLink, addLinkToTDLSettings);
 } else {
-	tR += newNoteLink;
+	tR += newNoteLink.tR;
 }`;
 				finalAction += tdl + "\n\n";
 
