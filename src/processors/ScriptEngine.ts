@@ -445,7 +445,9 @@ if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 	includedNote = "";
 } else {
 	includedNote = ${defaultInclude};
-}`;
+}
+
+tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
 				break;
 
 			default:
