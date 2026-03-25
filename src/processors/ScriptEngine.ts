@@ -366,7 +366,7 @@ const subjectName = activeFileFrontmatter?.Subject;`;
 					} else if (usedFor === "task") {
 						Object.assign(
 							targetFrontmatter,
-							{ cssclasses: ["hideProperties", "iotoTDL"] },
+							{ cssclasses: `['hideProperties', 'iotoTDL']` },
 							val,
 						);
 					} else {
@@ -445,7 +445,9 @@ if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 	includedNote = "";
 } else {
 	includedNote = ${defaultInclude};
-}`;
+}
+
+tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
 				break;
 
 			default:
