@@ -366,7 +366,7 @@ const subjectName = activeFileFrontmatter?.Subject;`;
 					} else if (usedFor === "task") {
 						Object.assign(
 							targetFrontmatter,
-							{ cssclasses: ["hideProperties", "iotoTDL"] },
+							{ cssclasses: `['hideProperties', 'iotoTDL']` },
 							val,
 						);
 					} else {
