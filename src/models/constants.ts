@@ -82,7 +82,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 7,
 		level: "Note",
 		valueType: "integer",
-		defaultValue: 0,
+		defaultValue: 2,
 		asSelector: true,
 		choices: [
 			{
@@ -116,7 +116,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 7,
 		level: "Note",
 		valueType: "integer",
-		defaultValue: 0,
+		defaultValue: 2,
 		asSelector: true,
 		choices: [
 			{
@@ -150,7 +150,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 7,
 		level: "Note",
 		valueType: "integer",
-		defaultValue: 0,
+		defaultValue: 2,
 		asSelector: true,
 		choices: [
 			{
@@ -184,7 +184,7 @@ export const TEMPLATE_OPTIONS: TemplateOption[] = [
 		order: 7,
 		level: "Note",
 		valueType: "integer",
-		defaultValue: 0,
+		defaultValue: 2,
 		asSelector: true,
 		choices: [
 			{
