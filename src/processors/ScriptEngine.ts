@@ -186,6 +186,10 @@ export class ScriptEngine {
 
 		templates += `const noteSettings = {\n`;
 
+		if ("Task" === usage) {
+			templates += `\tcreatePlanMode: false,\n`;
+		}
+
 		const noteOptions = TEMPLATE_OPTIONS.filter(
 			(o) => o.level === "Note" && o.for === usage,
 		);
@@ -227,13 +231,41 @@ if(folderSettings.showSubFolders) {
 	folderPath = folderSettings.folderPath;
 }`;
 
-		templates += folderPath + "\n\n";
+		const taskFolderPath = `
+let folderPath = "";
+
+const isSubjectFile = tp.file.title.includes(\`-\${ml.t("Subject")}-\`);
+const isInTaskFolder = tp.file.folder(true).startsWith(taskFolder);
+const isTaskSubject = isSubjectFile && isInTaskFolder;
+let createPlan;
+
+if(isTaskSubject) {
+	createPlan = await tp.system.suggester([ml.t("CreatePlan"), ml.t("CreateTDL")], [1, 2]);
+}
+
+noteSettings.createPlanMode = createPlan === 1;
+
+if(noteSettings.createPlanMode) {
+	folderPath = tp.file.folder(true);
+} else {
+	if(folderSettings.showSubFolders) {
+		folderPath = await tp.user.IOTOGetFolderOption(tp, folderSettings);
+	} else {
+		folderPath = folderSettings.folderPath; 
+	}
+}`;
+
+		if ("Task" === usage) {
+			templates += taskFolderPath + "\n\n";
+		} else {
+			templates += folderPath + "\n\n";
+		}
 
 		let finalAction = "";
 
 		switch (usage) {
 			case "Task":
-				finalAction = `await tp.user.IOTOCreateTasksList(tp, folderPath, noteSettings);\n\n`;
+				finalAction = `return await tp.user.IOTOCreateTasksList(tp, folderPath, noteSettings) || "";\n\n`;
 
 				break;
 			case "Custom":
