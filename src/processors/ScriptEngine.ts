@@ -322,7 +322,8 @@ const util = new utilClass(tp, app);
 const folder = tp.file.folder(true);
 const activeFileFrontmatter = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter;
 const projectName = activeFileFrontmatter?.Project;
-const subjectName = activeFileFrontmatter?.Subject;`;
+const subjectName = activeFileFrontmatter?.Subject;
+const planName = activeFileFrontmatter?.Plan;`;
 				break;
 			case "outcome":
 				header = `
