@@ -265,7 +265,7 @@ if(noteSettings.createPlanMode) {
 
 		switch (usage) {
 			case "Task":
-				finalAction = `return await tp.user.IOTOCreateTasksList(tp, folderPath, noteSettings) || "";\n\n`;
+				finalAction = `tR += await tp.user.IOTOCreateTasksList(tp, folderPath, noteSettings) || "";\n\n`;
 
 				break;
 			case "Custom":
@@ -333,7 +333,8 @@ const folder = tp.file.folder(true);
 const {projectNameFormat} = app.plugins.plugins["ioto-settings"].settings;
 const activeFileFrontmatter = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter;
 const projectName = activeFileFrontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);
-const subjectName = activeFileFrontmatter?.Subject;`;
+const subjectName = activeFileFrontmatter?.Subject;
+const planName = activeFileFrontmatter?.Plan;`;
 				break;
 			case "task":
 				header = `
@@ -463,7 +464,28 @@ if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 	defaultNoteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefault${usage}NoteTemplate"))
 }`;
 
-		templates += footer1 + "\n\n";
+		const taskFooter1 = `
+const matched = switchers.find(item => prefix.includes(item.match));
+let includedNote = "";
+
+const templates = {
+  note: "IOTODefaultTaskNoteTemplate",
+  subject: "IOTODefaultSubjectNoteTemplate",
+  plan: "IOTODefaultPlanNoteTemplate",
+};
+
+const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate] = await Promise.all(
+  Object.values(templates).map(async key => {
+    const tFile = tp.file.find_tfile(ml.t(key));
+    return tFile ? await tp.user.IOTOLoadTemplate(tp, tR, app, ml.t(key)) : "";
+  })
+);`;
+
+		if ("task" === usedFor) {
+			templates += taskFooter1 + "\n\n";
+		} else {
+			templates += footer1 + "\n\n";
+		}
 
 		let footer2 = "";
 
@@ -472,11 +494,16 @@ if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
 				footer2 = `if (matched && !tp.file.title.includes(ml.t("Subject"))) {
 	const matchedTemplate = tp.file.find_tfile(matched.template);
 	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
-} else if(tp.file.title.includes(ml.t("Subject"))) {
-	frontMatter.Subject = tp.file.title.split("-").last();
-	includedNote = "";
+} else if(tp.file.title.includes(\`-\${ml.t("Subject")}-\`)) {
+	frontMatter.Subject = [\`"\${tp.file.title.split("-").last()}"\`];
+	includedNote = defaultSubjectTemplate;
+} else if(tp.file.title.includes(\`-\${ml.t("Plan")}-\`)) {
+	frontMatter.Subject = [\`"\${tp.config.active_file.basename.split("-").last()}"\`];
+	frontMatter.Plan = [\`"\${tp.file.title.split("-").last()}"\`];
+	frontMatter.SubjectTDL = \`"[[\${tp.config.active_file.basename}]]"\`;
+	includedNote = defaultPlanTemplate;
 } else {
-	includedNote = ${defaultInclude};
+	includedNote = defaultNoteTemplate;
 }
 
 tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
@@ -486,6 +513,11 @@ tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
 				footer2 = `if (subjectName) {
     frontMatter.Subject = \`["\$\{subjectName\}"]\`;
 }
+
+if (planName) {
+    frontMatter.Plan = \`["\${planName}"]\`;
+}
+
 if (matched) {
 	const matchedTemplate = tp.file.find_tfile(matched.template);
 	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
