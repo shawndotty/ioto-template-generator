@@ -502,6 +502,7 @@ const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate] = await
 	frontMatter.Subject = [\`"\${tp.config.active_file.basename.split("-").last()}"\`];
 	frontMatter.Plan = [\`"\${tp.file.title.split("-").last()}"\`];
 	frontMatter.SubjectTDL = \`"[[\${tp.config.active_file.basename}]]"\`;
+	frontMatter.UpTask = \`"[[\${tp.config.active_file.basename}]]"\`;
 	includedNote = defaultPlanTemplate;
 } else {
 	includedNote = defaultNoteTemplate;
