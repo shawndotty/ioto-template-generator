@@ -521,8 +521,9 @@ if (planName) {
 }
 
 if (matched) {
-	const matchedTemplate = tp.file.find_tfile(matched.template);
-	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{matched.template\}]]\`)) : defaultNoteTemplate; 
+	const templateWillBeUsed = await tp.user.IOTOLoadTemplate(tp, tR, this.app, matched.template, false);
+	const matchedTemplate = tp.file.find_tfile(templateWillBeUsed);
+	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{templateWillBeUsed\}]]\`)) : defaultNoteTemplate; 
 } else {
 	includedNote = ${defaultInclude};
 }
