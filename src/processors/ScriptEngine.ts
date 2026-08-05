@@ -355,7 +355,8 @@ const folder = tp.file.folder(true);
 const {projectNameFormat} = app.plugins.plugins["ioto-settings"].settings;
 const activeFileFrontmatter = app.metadataCache.getFileCache(tp.config.active_file)?.frontmatter;
 const projectName = activeFileFrontmatter?.Project || await tp.user.IOTOCreateProjectName(tp.file.folder(true), projectNameFormat);
-const subjectName = activeFileFrontmatter?.Subject;`;
+const subjectName = activeFileFrontmatter?.Subject;
+const planName = activeFileFrontmatter?.Plan;`;
 				break;
 			default:
 				break;
