@@ -166,7 +166,7 @@ export default {
 	OUTCOME_ADD_LINK_TO_TDL_EXAMPLE: `true`,
 	CUSTOM_ADD_LINK_TO_TDL_EXAMPLE: `false`,
 	USE_FULL_PATH: `使用完整路徑`,
-	SWITCHERS: `切換器`,
+	SWITCHERS: `切換規則`,
 	SHARED_FRONT_MATTERS: `共享筆記屬性內容`,
 	DEFAULT_TEMPLATE: `預設範本`,
 	INPUT_USE_FULL_PATH_DESC: `選擇是否使用目標資料夾的完整路徑來檢查切換器的匹配設定。如果關閉此選項，將只使用目標資料夾名稱進行檢查。`,

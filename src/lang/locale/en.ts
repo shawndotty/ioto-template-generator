@@ -166,7 +166,7 @@ export default {
 	OUTCOME_ADD_LINK_TO_TDL_EXAMPLE: `true`,
 	CUSTOM_ADD_LINK_TO_TDL_EXAMPLE: `false`,
 	USE_FULL_PATH: `Use Full Path`,
-	SWITCHERS: `Switchers`,
+	SWITCHERS: `Switcher Rules`,
 	SHARED_FRONT_MATTERS: `Shared Front Matters`,
 	DEFAULT_TEMPLATE: `Default Template`,
 	INPUT_USE_FULL_PATH_DESC: `Choose whether to use the full path of the target folder to check the switcher's match setting. If you turn this off, only the target folder name will be used for checking.`,
