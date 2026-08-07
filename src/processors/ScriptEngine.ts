@@ -536,7 +536,7 @@ const planName = activeFileFrontmatter?.Plan;`;
 		templates += frontmatterStr + "\n\n";
 
 		if ("task" === usedFor) {
-			templates += `\tconst pendingMeta = (app.__iotoTaskMeta && app.__iotoTaskMeta[tp.file.title]) || null;
+			templates += `const pendingMeta = (app.__iotoTaskMeta && app.__iotoTaskMeta[tp.file.title]) || null;
 if (pendingMeta && pendingMeta.upTask) {
         frontMatter.UpTask = pendingMeta.upTask;
 }
@@ -571,19 +571,7 @@ const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate, default
   })
 );const matched = switchers.find(item => prefix.includes(item.match));
 let includedNote = "";
-
-const templates = {
-  note: "IOTODefaultTaskNoteTemplate",
-  subject: "IOTODefaultSubjectNoteTemplate",
-  plan: "IOTODefaultPlanNoteTemplate",
-};
-
-const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate] = await Promise.all(
-  Object.values(templates).map(async key => {
-    const tFile = tp.file.find_tfile(ml.t(key));
-    return tFile ? await tp.user.IOTOLoadTemplate(tp, tR, app, ml.t(key)) : "";
-  })
-);`;
+`;
 
 		if ("task" === usedFor) {
 			templates += taskFooter1 + "\n\n";
