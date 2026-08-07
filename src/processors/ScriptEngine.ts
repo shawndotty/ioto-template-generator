@@ -148,6 +148,14 @@ export class ScriptEngine {
 
 		templates += IOTO_ML + "\n\n";
 
+		if ("Task" === usage) {
+			templates += `const selectedText = ((tp.file.selection && tp.file.selection()) || "").trim();
+const activeFileBaseName = tp.config?.active_file?.basename ?? "";
+const currentFolderPath = tp.file?.folder?.(true) ?? "";
+const isInTaskFolder = currentFolderPath ? currentFolderPath.startsWith(taskFolder) : false;
+const onlyUseDateType = !(taskSelectorEnableSubjectTask || taskSelectorEnablePlanTask || taskSelectorEnableNormalTask);\n`;
+		}
+
 		templates += `const folderSettings = {\n`;
 
 		const folderOptions = TEMPLATE_OPTIONS.filter(
@@ -188,6 +196,9 @@ export class ScriptEngine {
 
 		if ("Task" === usage) {
 			templates += `\tcreatePlanMode: false,\n`;
+			templates += `\ttaskType: "date",\n`;
+			templates += `\tupTask: null,\n`;
+			templates += `\tselectedText,\n`;
 		}
 
 		const noteOptions = TEMPLATE_OPTIONS.filter(
@@ -233,26 +244,91 @@ if(folderSettings.showSubFolders) {
 
 		const taskFolderPath = `
 let folderPath = "";
+let scope = "otherProject";
 
-const isSubjectFile = tp.file.title.includes(\`-\${ml.t("Subject")}-\`);
-const isInTaskFolder = tp.file.folder(true).startsWith(taskFolder);
-const isTaskSubject = isSubjectFile && isInTaskFolder;
-let createPlan;
+if (isInTaskFolder) {
+    const baseChoices = [ml.t("CreateTaskForCurrentProject"), ml.t("CreateTaskForOtherProject")];
+    const baseValues = ["currentProject", "otherProject"];
+    const scopeChoices = onlyUseDateType 
+        ? baseChoices 
+        : [ml.t("CreateSubTaskForCurrent"), ...baseChoices];
+    const scopeValues = onlyUseDateType 
+        ? baseValues 
+        : ["subTask", ...baseValues];
+    const labeledChoices = scopeChoices.map((choice, index) => \`\${index + 1}. \${choice}\`);
+    const selectedScope = await tp.system.suggester(labeledChoices, scopeValues);
 
-if(isTaskSubject) {
-	createPlan = await tp.system.suggester([ml.t("CreatePlan"), ml.t("CreateTDL")], [1, 2]);
+    if (!selectedScope) {
+        if (selectedText) {
+            tR += selectedText;
+        }
+        return tR;
+    } else {
+        scope = selectedScope;
+    }
+
 }
 
-noteSettings.createPlanMode = createPlan === 1;
-
-if(noteSettings.createPlanMode) {
-	folderPath = tp.file.folder(true);
+if (scope === "subTask") {
+    noteSettings.upTask = activeFileBaseName ? \`[[\${activeFileBaseName}]]\` : null;
+    folderPath = currentFolderPath;
+} else if (scope === "currentProject") {
+    folderPath = currentFolderPath;
 } else {
-	if(folderSettings.showSubFolders) {
-		folderPath = await tp.user.IOTOGetFolderOption(tp, folderSettings);
-	} else {
-		folderPath = folderSettings.folderPath; 
-	}
+    if (scope === "otherProject" && isInTaskFolder) {
+        folderSettings.excludesPaths = [
+        ...folderSettings.excludesPaths,
+        currentFolderPath,
+        ];
+    }
+    if (folderSettings.showSubFolders) {
+            folderPath = await tp.user.IOTOGetFolderOption(tp, folderSettings);
+    } else {
+            folderPath = folderSettings.folderPath;
+    }
+
+}
+
+if (!folderPath || !scope) {
+    if (selectedText) {
+        tR += selectedText;
+    }
+    return tR;
+}
+
+const taskTypeChoices = [ml.t("CreateDateTask")];
+const taskTypeValues = ["date"];
+
+if (Boolean(taskSelectorEnableSubjectTask)) {
+    taskTypeChoices.push(ml.t("CreateSubjectTask"));
+    taskTypeValues.push("subject");
+}
+
+if (Boolean(taskSelectorEnablePlanTask)) {
+    taskTypeChoices.push(ml.t("CreatePlanTask"));
+    taskTypeValues.push("plan");
+}
+
+if (Boolean(taskSelectorEnableNormalTask)) {
+    taskTypeChoices.push(ml.t("CreateNormalTask"));
+    taskTypeValues.push("normal");
+}
+
+let selectedTaskType = "";
+if (taskTypeValues.length === 1) {
+    selectedTaskType = taskTypeValues[0];
+} else {
+    const labledTaskTypeChoices = taskTypeChoices.map((choice, index) => \`\${index + 1}. \${choice}\`);
+    selectedTaskType = await tp.system.suggester(labledTaskTypeChoices, taskTypeValues);
+}
+
+if (!selectedTaskType) {
+    if (selectedText) {
+    tR += selectedText;
+    }
+    return tR;
+} else {
+    noteSettings.taskType = selectedTaskType;
 }`;
 
 		if ("Task" === usage) {
