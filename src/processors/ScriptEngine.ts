@@ -569,7 +569,7 @@ const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate, default
     const tFile = tp.file.find_tfile(ml.t(key));
     return tFile ? await tp.user.IOTOLoadTemplate(tp, tR, app, ml.t(key)) : "";
   })
-);const matched = switchers.find(item => prefix.includes(item.match));
+);
 `;
 
 		if ("task" === usedFor) {
