@@ -570,7 +570,6 @@ const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate, default
     return tFile ? await tp.user.IOTOLoadTemplate(tp, tR, app, ml.t(key)) : "";
   })
 );const matched = switchers.find(item => prefix.includes(item.match));
-let includedNote = "";
 `;
 
 		if ("task" === usedFor) {
