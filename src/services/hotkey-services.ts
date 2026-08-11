@@ -140,7 +140,7 @@ export class HotkeyService {
 							}
 							hotkeyManager.save();
 							new Notice(
-								t("HOTKEY_APPLIED_SUCCESSFULLY", [commandId]),
+								t("HOTKEY_APPLIED_SUCCESSFULLY", { commandId }),
 								2000,
 							);
 						} else if (attempt < maxRetries) {

@@ -25,7 +25,7 @@ function _get_current_lang(): string {
 	} catch (e) {
 		console.error(
 			"Failed to get language setting, falling back to 'en'",
-			e
+			e,
 		);
 		return "en";
 	}
@@ -62,15 +62,32 @@ function _get_locale(): typeof en {
 /**
  * Translates a string key into the current language.
  * @param str The key of the string to translate.
- * @param args Optional arguments for string interpolation (e.g. "{0}", "{1}").
+ * @param args Optional arguments for string interpolation.
+ *   - Array: for indexed placeholders e.g. "{0}", "{1}"
+ *   - Object: for named placeholders e.g. "${name}", "${file}"
  * @returns The translated string.
  */
-export function t(str: keyof typeof en, args?: string[]): string {
-	let msg = _get_locale()[str];
-	if (args && args.length > 0) {
-		args.forEach((arg, index) => {
-			msg = msg.replace(new RegExp(`\\{${index}\\}`, "g"), arg);
-		});
+export function t(
+	str: keyof typeof en,
+	args?: string[] | Record<string, string>,
+): string {
+	let msg: string = _get_locale()[str] ?? "";
+	if (args) {
+		if (Array.isArray(args)) {
+			args.forEach((arg, index) => {
+				msg = msg.replace(new RegExp(`\\{${index}\\}`, "g"), arg ?? "");
+			});
+		} else {
+			Object.keys(args).forEach((key) => {
+				const value = args[key];
+				if (value !== undefined) {
+					msg = msg.replace(
+						new RegExp(`\\$\\{${key}\\}`, "g"),
+						value,
+					);
+				}
+			});
+		}
 	}
 	return msg;
 }
