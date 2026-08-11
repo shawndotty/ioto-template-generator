@@ -1,6 +1,6 @@
 {
 	"name": "ioto-template-generator",
-	"version": "2.0.4",
+	"version": "2.2.2",
 	"description": "Template Generator for IOTO Framework",
 	"main": "main.js",
 	"type": "module",
