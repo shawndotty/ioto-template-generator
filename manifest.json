@@ -1,7 +1,7 @@
 {
 	"id": "ioto-template-generator",
 	"name": "IOTO Template Generator",
-	"version": "2.2.2",
+	"version": "2.2.3",
 	"minAppVersion": "0.15.0",
 	"description": "Templates Generator for IOTO Framework",
 	"author": "Obsidian",
