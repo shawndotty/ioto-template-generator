@@ -249,12 +249,13 @@ export class TemplateMapView extends ItemView {
 				count: String(category.rules.length),
 			}),
 		});
-		headText.createSpan({
+		const switcherField = headText.createSpan({
 			cls: "ioto-template-map-muted",
-			text: `${t("MAP_FIELD_SWITCHER")}: ${
-				category.switcher?.file?.path ?? category.switcher?.name ?? "—"
-			}`,
 		});
+		switcherField.createSpan({
+			text: `${t("MAP_FIELD_SWITCHER")}: `,
+		});
+		this.renderSwitcherLink(switcherField, category.switcher);
 
 		const toggle = head.createEl("button", {
 			cls: "ioto-template-map-icon-btn",
@@ -303,12 +304,32 @@ export class TemplateMapView extends ItemView {
 
 		this.renderRuleTable(body, category);
 
-		body.createDiv({
+		const sourceLine = body.createDiv({
 			cls: "ioto-template-map-source-line",
-			text: t("MAP_SOURCE_LINE", {
-				path: category.switcher?.file?.path ?? category.switcher?.name ?? "—",
-			}),
 		});
+		sourceLine.createSpan({ text: t("MAP_SOURCE_LINE_PREFIX") });
+		this.renderSwitcherLink(sourceLine, category.switcher);
+		sourceLine.createSpan({ text: t("MAP_SOURCE_LINE_SUFFIX") });
+	}
+
+	/** 切换器文件本身的链接；缺失时退化成红色删除线文本。 */
+	private renderSwitcherLink(
+		container: HTMLElement,
+		ref: FileRef | null,
+	): void {
+		if (!ref?.file) {
+			container.createSpan({
+				cls: "ioto-template-map-missing",
+				text: ref?.name || "—",
+			});
+			return;
+		}
+		const link = container.createSpan({
+			cls: "ioto-template-map-link",
+			text: ref.file.path,
+		});
+		link.title = ref.file.path;
+		link.onclick = () => this.openFile(ref.file?.path ?? "");
 	}
 
 	private renderEntry(
