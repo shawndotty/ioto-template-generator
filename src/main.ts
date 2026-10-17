@@ -12,8 +12,9 @@ import {
 	IOTOTemplateGeneratorSettings,
 	SettingTab,
 } from "./settings";
-import { GENERATOR_VIEW_TYPE } from "./models/constants";
+import { GENERATOR_VIEW_TYPE, MAP_VIEW_TYPE } from "./models/constants";
 import { GeneratorView } from "views/GeneratorView";
+import { TemplateMapView } from "views/TemplateMapView";
 import { t } from "./lang/helpers";
 import { IotoSettingsService } from "services/ioto-settings-services";
 
@@ -29,6 +30,11 @@ export default class IOTOTemplateGenerator extends Plugin {
 			this.registerView(
 				GENERATOR_VIEW_TYPE,
 				(leaf) => new GeneratorView(leaf, this),
+			);
+
+			this.registerView(
+				MAP_VIEW_TYPE,
+				(leaf) => new TemplateMapView(leaf, this),
 			);
 
 			this.addRibbonIcon(
@@ -53,6 +59,15 @@ export default class IOTOTemplateGenerator extends Plugin {
 				},
 			});
 
+			this.addCommand({
+				id: "open-template-map",
+				name: t("MAP_COMMAND_OPEN"),
+				icon: "map",
+				callback: () => {
+					void this.activateMapView();
+				},
+			});
+
 			// This adds a settings tab so the user can configure various aspects of the plugin
 			this.addSettingTab(new SettingTab(this.app, this));
 		} catch (error) {
@@ -69,39 +84,38 @@ export default class IOTOTemplateGenerator extends Plugin {
 	onunload() {}
 
 	async activateView(openInNewWindow = false) {
+		await this.revealOrCreate(GENERATOR_VIEW_TYPE, openInNewWindow);
+	}
+
+	async activateMapView(openInNewWindow = false) {
+		await this.revealOrCreate(MAP_VIEW_TYPE, openInNewWindow);
+	}
+
+	/** 找已有 leaf -> 没有就新建 -> reveal；两个视图入口共用。 */
+	private async revealOrCreate(
+		type: string,
+		openInNewWindow = false,
+	): Promise<void> {
 		const { workspace } = this.app;
 
 		if (openInNewWindow) {
 			const leaf = workspace.getLeaf("window");
-			await leaf.setViewState({
-				type: GENERATOR_VIEW_TYPE,
-				active: true,
-			});
+			await leaf.setViewState({ type, active: true });
 			workspace.revealLeaf(leaf);
 			return;
 		}
 
-		let leaf: WorkspaceLeaf | null = null;
-		const leaves = workspace.getLeavesOfType(GENERATOR_VIEW_TYPE);
+		let leaf: WorkspaceLeaf | null =
+			workspace.getLeavesOfType(type)[0] ?? null;
 
-		if (leaves.length > 0) {
-			// A leaf with our view already exists, use that
-			leaf = leaves[0] as WorkspaceLeaf;
-		} else {
-			// Our view could not be found in the workspace, create a new leaf
-			// in the right sidebar for default, or main area if preferred.
-			// The user requested a main workspace leaf item view.
+		if (!leaf) {
+			// 用户要求主工作区的 tab 视图
 			leaf = workspace.getLeaf("tab");
-			await leaf.setViewState({
-				type: GENERATOR_VIEW_TYPE,
-				active: true,
-			});
+			await leaf.setViewState({ type, active: true });
 		}
 
 		// "Reveal" the leaf in case it is in a collapsed sidebar
-		if (leaf) {
-			workspace.revealLeaf(leaf);
-		}
+		workspace.revealLeaf(leaf);
 	}
 
 	async loadSettings() {

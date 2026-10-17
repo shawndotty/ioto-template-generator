@@ -231,6 +231,14 @@ export class GeneratorView extends ItemView {
 			.onClick(() => this.openPresetSaveModal());
 
 		new ButtonComponent(actionBar)
+			.setButtonText(t("MAP_BTN_MAP"))
+			.setIcon("map")
+			.setTooltip(t("MAP_BTN_MAP"))
+			.onClick(() => {
+				void this.plugin.activateMapView();
+			});
+
+		new ButtonComponent(actionBar)
 			.setButtonText(t("GENERATOR_VIEW_BTN_GENERATE"))
 			.setCta()
 			.onClick(() => this.generateScript());

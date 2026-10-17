@@ -2,6 +2,7 @@ import { TemplateOption } from "../types/types";
 import { t } from "../lang/helpers";
 
 export const GENERATOR_VIEW_TYPE = "ioto-template-generator-view";
+export const MAP_VIEW_TYPE = "ioto-template-map-view";
 
 export const IOTO_VARIABLES = {
 	input: `const {inputFolder, LTDListInputSectionHeading, LTDListOutputSectionHeading, taskFolder, useUserTemplate, addLinkToCurrentTDL, defaultTDLDateFormat, inputSelectorExcludesPaths, inputSelectorShowOptionOrder, inputSelectorShowBasePath, inputSelectorFolderOptionTemplate, newInputNoteFollowUpAction, inputNoteNamePrefix, inputNoteNamePostfix, inputNoteDefaultExcalidrawTemplate, defaultTDLHeadingLevel, newInputNoteAddedToTDLFollowUpAction, addNewInputNoteToTDL} = app.plugins.plugins["ioto-settings"].settings;`,
