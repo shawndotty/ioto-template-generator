@@ -7,8 +7,6 @@ import {
 } from "../models/constants";
 
 import { SWITCHERS_TEMPLATE_OPTIONS } from "../models/constantsSwitcher";
-import { Notice } from "obsidian";
-import { t } from "../lang/helpers";
 
 export class ScriptEngine {
 	static parseSelector(content: string): {
@@ -107,9 +105,11 @@ export class ScriptEngine {
 			/const\s+pathMode\s*=\s*(true|false);/,
 		);
 		const useFullPath = pathModeMatch ? pathModeMatch[1] === "true" : false;
-		const defaultTemplate = content.match(
-			/tp.file.include\(`\[\[([^$\{]+)\]\]`\)/,
-		);
+		const defaultTemplate =
+			content.match(/tp\.file\.include\(`\[\[([^$\{]+)\]\]`\)/) ||
+			content.match(
+				/IOTOLoadTemplate\.load\(\s*tp\s*,\s*app\s*,\s*"([^"]+)"\s*\)/,
+			);
 		const defaultTemplateName = defaultTemplate ? defaultTemplate[1] : "";
 
 		return {
@@ -120,6 +120,8 @@ export class ScriptEngine {
 				switchers,
 				useFullPath,
 				defaultTemplateName,
+				// 与 SWITCHERS_TEMPLATE_OPTIONS 的字段名对齐，导入后才能真正回填/回写默认模板
+				defaultTemplate: defaultTemplateName,
 			},
 		};
 	}
@@ -450,8 +452,7 @@ const planName = activeFileFrontmatter?.Plan;`;
 		let prefixStr = "";
 		let frontmatterStr = "";
 		let switchersStr = "";
-		let defaultTemplate = "";
-		let defaultInclude = "";
+		let defaultLoadExpr = "";
 
 		folderOptions.forEach((opt) => {
 			const userVal = folderSettings[opt.name];
@@ -470,17 +471,11 @@ const planName = activeFileFrontmatter?.Plan;`;
 				case "sharedFrontMatters":
 					frontmatterStr += `const frontMatter = {\n`;
 					frontmatterStr += '\tProject: \`["${projectName}"]\`,\n';
-					const targetFrontmatter = {};
-					if ("outcome" === usedFor) {
+					const targetFrontmatter: Record<string, any> = {};
+					if (usedFor === "task") {
 						Object.assign(
 							targetFrontmatter,
-							{ Status: t("ONGOING") },
-							val,
-						);
-					} else if (usedFor === "task") {
-						Object.assign(
-							targetFrontmatter,
-							{ cssclasses: `['hideProperties', 'iotoTDL']` },
+							{ cssclasses: `["hideProperties", "iotoTDL"]` },
 							val,
 						);
 					} else {
@@ -489,7 +484,7 @@ const planName = activeFileFrontmatter?.Plan;`;
 					Object.entries(targetFrontmatter).forEach(([key, val]) => {
 						// 根据类型决定是否需要引号
 						if (typeof val === "string") {
-							frontmatterStr += `\t${key}: "${val}",\n`;
+							frontmatterStr += `\t${key}: ${this.quoteJsString(val)},\n`;
 						} else if (
 							typeof val === "boolean" ||
 							typeof val === "number"
@@ -520,10 +515,10 @@ const planName = activeFileFrontmatter?.Plan;`;
 					break;
 
 				case "defaultTemplate":
-					defaultTemplate = val;
-					defaultInclude = defaultTemplate
-						? `(await tp.file.include(\`[[${defaultTemplate}]]\`))`
-						: `defaultNoteTemplate`;
+					defaultLoadExpr =
+						!userVal || userVal === defaultVal
+							? `ml.t("IOTODefault${usage}NoteTemplate")`
+							: this.quoteJsString(String(val));
 					break;
 
 				default:
@@ -536,105 +531,102 @@ const planName = activeFileFrontmatter?.Plan;`;
 		templates += frontmatterStr + "\n\n";
 
 		if ("task" === usedFor) {
-			templates += `const pendingMeta = (app.__iotoTaskMeta && app.__iotoTaskMeta[tp.file.title]) || null;
+			templates += `const taskMetaStore = app.plugins.plugins["ioto-settings"].__iotoTaskMeta;
+const taskMetaKey = tp.file.path(true);
+const pendingMeta = (taskMetaStore && taskMetaStore[taskMetaKey]) || null;
 if (pendingMeta && pendingMeta.upTask) {
-        frontMatter.UpTask = pendingMeta.upTask;
+	frontMatter.UpTask = pendingMeta.upTask;
 }
-if (app.__iotoTaskMeta) delete app.__iotoTaskMeta[tp.file.title];\n`;
+if (taskMetaStore) delete taskMetaStore[taskMetaKey];\n\n`;
+		} else {
+			templates += `if (subjectName) {
+	frontMatter.Subject = \`["\$\{subjectName\}"]\`;
+}
+
+if (planName) {
+	frontMatter.Plan = \`["\${planName}"]\`;
+}\n\n`;
 		}
 
 		templates += switchersStr + "\n\n";
 
-		const footer1 = `
+		const footer = `
 const matched = switchers.find(item => prefix.includes(item.match));
-let includedNote = "";
-let defaultNoteTemplate = "";
-if(tp.file.find_tfile(ml.t("IOTODefault${usage}NoteTemplate"))){
-	defaultNoteTemplate = await tp.user.IOTOLoadTemplate(tp, tR, this.app, ml.t("IOTODefault${usage}NoteTemplate"))
-}`;
-
-		const taskFooter1 = `
-const matched = switchers.find(item => prefix.includes(item.match));
-let includedNote = "";
-
-const templates = {
-  note: "IOTODefaultTaskNoteTemplate",
-  subject: "IOTODefaultSubjectNoteTemplate",
-  plan: "IOTODefaultPlanNoteTemplate",
-  normal: "IOTODefaultNormalNoteTemplate",
-};
-
-const [defaultNoteTemplate, defaultSubjectTemplate, defaultPlanTemplate, defaultNormalTemplate] = await Promise.all(
-  Object.values(templates).map(async key => {
-    const tFile = tp.file.find_tfile(ml.t(key));
-    return tFile ? await tp.user.IOTOLoadTemplate(tp, tR, app, ml.t(key)) : "";
-  })
-);
-`;
-
-		if ("task" === usedFor) {
-			templates += taskFooter1 + "\n\n";
-		} else {
-			templates += footer1 + "\n\n";
-		}
-
-		let footer2 = "";
-
-		switch (usedFor) {
-			case "task":
-				footer2 = `if (matched) {
-	const matchedTemplate = tp.file.find_tfile(matched.template);
-	includedNote = matchedTemplate ? (await tp.file.include(\`[[\${matched.template}]]\`)) : defaultNoteTemplate; 
-} else if(tp.file.title.includes(\`-\${ml.t("Subject")}-\`)) {
-	frontMatter.Subject = [\`"\${tp.file.title.split("-").last()}"\`];
-	includedNote = defaultSubjectTemplate;
-} else if(tp.file.title.includes(\`-\${ml.t("Plan")}-\`)) {
-	frontMatter.Plan = [\`"\${tp.file.title.split("-").last()}"\`];
-	if (subjectName) {
-    	frontMatter.Subject = \`["\${subjectName}"]\`;
-	}
-	includedNote = defaultPlanTemplate;
-} else if(!tp.file.title.startsWith(\`\${projectName}-\`)) {
-    if (subjectName) {
-        frontMatter.Subject = \`["\${subjectName}"]\`
-    }
-    if (planName) {
-        frontMatter.Plan = \`["\${planName}"]\`;
-    }
-	includedNote = defaultNormalTemplate;
-} else {
-	includedNote = defaultNoteTemplate;
-}
-
-tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
-				break;
-
-			default:
-				footer2 = `if (subjectName) {
-    frontMatter.Subject = \`["\$\{subjectName\}"]\`;
-}
-
-if (planName) {
-    frontMatter.Plan = \`["\${planName}"]\`;
-}
+let usedTemplate = null;
 
 if (matched) {
-	const templateWillBeUsed = await tp.user.IOTOLoadTemplate(tp, tR, this.app, matched.template, false);
-	const matchedTemplate = tp.file.find_tfile(templateWillBeUsed);
-	includedNote = matchedTemplate ? (await tp.file.include(\`[[\$\{templateWillBeUsed\}]]\`)) : defaultNoteTemplate; 
-} else {
-	includedNote = ${defaultInclude};
+	usedTemplate = await tp.user.IOTOLoadTemplate.load(tp, app, matched.template);
+	if (!usedTemplate.file) {
+		new tp.obsidian.Notice(ml.t("TemplateNotExist", { template: matched.template }));
+	}
 }
 
+if (!usedTemplate || !usedTemplate.file) {
+	usedTemplate = await tp.user.IOTOLoadTemplate.load(tp, app, ${defaultLoadExpr});
+}
+
+const includedNote = usedTemplate.content;
+const templateLink = tp.user.IOTOLoadTemplate.linkValue(app, usedTemplate.file);
+if (templateLink) frontMatter.iotoTemplate = templateLink;
+
 tR += util.noteFrontMatterCooker(util.addIOOLinkPropertyToFrontMatter(frontMatter, tp.config.active_file), includedNote);`;
-				break;
+
+		const taskFooter = `
+const matched = switchers.find(item => prefix.includes(item.match));
+
+const templates = {
+	note: "IOTODefaultTaskNoteTemplate",
+	subject: "IOTODefaultSubjectNoteTemplate",
+	plan: "IOTODefaultPlanNoteTemplate",
+	normal: "IOTODefaultNormalNoteTemplate",
+};
+
+// 四个模板并行加载；每一项都自带 file，属性不会退化成「最后一次 include 的那个」
+const [noteTpl, subjectTpl, planTpl, normalTpl] = await Promise.all(
+	Object.values(templates).map(key => tp.user.IOTOLoadTemplate.load(tp, app, ml.t(key)))
+);
+
+let usedTemplate = null;
+if (matched) {
+	const matchedTpl = await tp.user.IOTOLoadTemplate.load(tp, app, matched.template);
+	usedTemplate = matchedTpl.file ? matchedTpl : noteTpl;
+} else if (tp.file.title.includes(\`-\${ml.t("Subject")}-\`)) {
+	frontMatter.Subject = [\`"\${tp.file.title.split("-").last()}"\`];
+	usedTemplate = subjectTpl;
+} else if (tp.file.title.includes(\`-\${ml.t("Plan")}-\`)) {
+	frontMatter.Plan = [\`"\${tp.file.title.split("-").last()}"\`];
+	if (subjectName) {
+		frontMatter.Subject = \`["\${subjectName}"]\`;
+	}
+	usedTemplate = planTpl;
+} else if (!tp.file.title.startsWith(\`\${projectName}-\`)) {
+	if (subjectName) {
+		frontMatter.Subject = \`["\${subjectName}"]\`
+	}
+	if (planName) {
+		frontMatter.Plan = \`["\${planName}"]\`;
+	}
+	usedTemplate = normalTpl;
+} else {
+	usedTemplate = noteTpl;
+}
+
+const includedNote = usedTemplate.content;
+const templateLink = tp.user.IOTOLoadTemplate.linkValue(app, usedTemplate.file);
+if (templateLink) frontMatter.iotoTemplate = templateLink;
+
+tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
+
+		templates += ("task" === usedFor ? taskFooter : footer) + "\n\n";
+
+		return "<%*\n" + templates + "\n_%>";
+	}
+
+	private static quoteJsString(value: string): string {
+		if (!value.includes("'") && value.includes('"')) {
+			return `'${value}'`;
 		}
-
-		templates += footer2 + "\n\n";
-
-		let finalTemplate = "<%*\n" + templates + "\n_%>";
-
-		return finalTemplate;
+		return JSON.stringify(value);
 	}
 
 	private static convertFirstLetterToUpperCase(str: string) {
