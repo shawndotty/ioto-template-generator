@@ -789,6 +789,27 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    /* 条目变多时允许换行，避免下拉把标题挤扁 */
+    flex-wrap: wrap;
+}
+
+.ioto-template-map-card-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.ioto-template-map-scope {
+    max-width: 320px;
+    height: auto;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.ioto-template-map-scope-note {
+    color: var(--text-muted);
+    font-size: 12px;
 }
 
 .ioto-template-map-card-title {
@@ -830,6 +851,8 @@
     border-top: 1px dashed var(--background-modifier-border);
     padding-top: 10px;
     margin-top: 10px;
+    /* 供窄栏容器查询使用：分屏时表格按 1 列堆叠，避免右列被裁掉。 */
+    container-type: inline-size;
 }
 
 .ioto-template-map-entry:first-child {
@@ -838,43 +861,24 @@
     margin-top: 0;
 }
 
-.ioto-template-map-entry-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-}
-
-.ioto-template-map-source {
-    font-size: 10px;
-    line-height: 1.6;
-    padding: 0 6px;
-    border-radius: 4px;
-    background: var(--background-modifier-hover);
-}
-
-.ioto-template-map-source.is-hotkey {
-    color: var(--text-accent);
-}
-
-.ioto-template-map-field {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
 .ioto-template-map-link {
-    color: var(--text-accent);
+    color: var(--text-normal);
     cursor: pointer;
     overflow-wrap: anywhere;
 }
 
 .ioto-template-map-link:hover {
+    color: var(--text-accent);
     text-decoration: underline;
+}
+
+/* 配置层链接：平时与正文同色，只有 hover 才亮起。 */
+.ioto-template-map-link.is-quiet {
+    color: var(--text-muted);
+}
+
+.ioto-template-map-link.is-quiet:hover {
+    color: var(--text-accent);
 }
 
 .ioto-template-map-missing {
@@ -894,7 +898,7 @@
 
 .ioto-template-map-context {
     font-size: 10px;
-    color: var(--text-accent);
+    color: var(--text-muted);
 }
 
 .ioto-template-map-table {
@@ -905,10 +909,11 @@
 
 .ioto-template-map-row {
     display: grid;
-    grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) minmax(220px, 1.6fr);
+    grid-template-columns: minmax(200px, 1.6fr) minmax(120px, 0.9fr) minmax(200px, 1.4fr);
     align-items: center;
     gap: 8px;
-    padding: 5px 10px;
+    padding: 6px 10px;
+    line-height: 1.45;
     border-top: 1px solid var(--background-modifier-border);
     font-size: 12px;
 }
@@ -917,10 +922,44 @@
     border-top: none;
 }
 
+/* 斑马纹：先给实色兜底，再叠半透明版本，主题差异下都不会失去可读性。 */
+.ioto-template-map-row:not(.is-head):nth-child(even) {
+    background: var(--background-secondary);
+    background: color-mix(in srgb, var(--background-secondary) 40%, transparent);
+}
+
+.ioto-template-map-row:not(.is-head):hover {
+    background: var(--background-modifier-hover);
+}
+
 .ioto-template-map-row.is-head {
     background: var(--background-secondary);
     color: var(--text-muted);
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* 窄栏（分屏/侧边）下三列放不下：先压缩列宽，再窄到放不下就退成一列。 */
+@container (max-width: 520px) {
+    .ioto-template-map-row {
+        grid-template-columns:
+            minmax(0, 1.25fr)
+            minmax(0, 0.7fr)
+            minmax(0, 1.05fr);
+        gap: 6px;
+        padding: 6px 8px;
+    }
+}
+
+@container (max-width: 340px) {
+    .ioto-template-map-row {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+
+    .ioto-template-map-row.is-head {
+        display: none;
+    }
 }
 
 .ioto-template-map-cell {
@@ -936,10 +975,24 @@
 .ioto-template-map-folder {
     cursor: pointer;
     display: inline-block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-normal);
 }
 
 .ioto-template-map-folder:hover {
     color: var(--text-accent);
+}
+
+.ioto-template-map-cell.is-rule {
+    font-variant-numeric: tabular-nums;
+}
+
+/* 模板名是最长的一列：折行而不是被 ellipsis 吃掉。 */
+.ioto-template-map-cell.is-template {
+    white-space: normal;
+    flex-wrap: wrap;
+    overflow: visible;
 }
 
 .ioto-template-map-status {
@@ -950,10 +1003,6 @@
     white-space: nowrap;
     background: var(--background-modifier-hover);
     color: var(--text-muted);
-}
-
-.ioto-template-map-status.is-matched {
-    color: var(--text-success);
 }
 
 .ioto-template-map-status.is-matched-missing {
@@ -1069,12 +1118,6 @@
     border-radius: 4px;
 }
 
-.ioto-template-map-source-line {
-    margin-top: 12px;
-    font-size: 11px;
-    color: var(--text-faint);
-}
-
 .ioto-template-map-error {
     color: var(--text-error);
     font-size: 12px;
@@ -1083,6 +1126,84 @@
 
 .ioto-template-map-empty {
     color: var(--text-muted);
+}
+
+/* 条目摘要行：整行是折叠开关，视觉上必须比表格弱。
+   `button.x` 而非 `.x`：核心 `button:not(.clickable-icon)` 的权重是 (0,1,1)。 */
+button.ioto-template-map-entry-summary {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 2px 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    text-align: left;
+    cursor: pointer;
+}
+
+button.ioto-template-map-entry-summary:hover {
+    background: transparent;
+    color: var(--text-normal);
+}
+
+.ioto-template-map-entry-summary svg {
+    width: 12px;
+    height: 12px;
+}
+
+.ioto-template-map-entry-summary .is-issue {
+    color: var(--text-warning);
+}
+
+.ioto-template-map-entry-chevron {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+/* 摘要行 + 注脚：一起待在表格之后，构成条目的「配置脚注」区。 */
+.ioto-template-map-entry-footer {
+    margin-top: 8px;
+}
+
+/* 注脚：配置细节的归宿，默认隐藏。 */
+.ioto-template-map-entry-footnote {
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--text-faint);
+}
+
+.ioto-template-map-entry-footnote.is-hidden {
+    display: none;
+}
+
+.ioto-template-map-footnote-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+}
+
+.ioto-template-map-issue {
+    font-size: 11px;
+    color: var(--text-error);
+}
+
+.ioto-template-map-issue.is-warn {
+    color: var(--text-warning);
 }
 
 /* 手机端底部要给 mobile navbar 留位置；--view-bottom-spacing 由核心/皮肤维护。 */
@@ -1101,15 +1222,9 @@
         align-items: stretch;
     }
 
-    .ioto-template-map-entry-meta {
-        flex-direction: column;
+    .ioto-template-map-entry-summary {
+        white-space: normal;
         align-items: flex-start;
-        gap: 6px;
-    }
-
-    .ioto-template-map-field {
-        flex-wrap: wrap;
-        width: 100%;
     }
 
     .ioto-template-map-card-title {
@@ -1130,5 +1245,15 @@
     .ioto-template-map-status,
     .ioto-template-map-via {
         white-space: nowrap;
+    }
+
+    .ioto-template-map-card-tools {
+        margin-left: 0;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .ioto-template-map-scope {
+        max-width: 100%;
     }
 }

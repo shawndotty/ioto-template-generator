@@ -33,6 +33,8 @@ import {
 	FileRef,
 	FolderRow,
 	FolderSettings,
+	OutcomeScope,
+	OutcomeScopeInfo,
 	ReverseIndexRow,
 	RuleRow,
 	SelectorHeader,
@@ -67,6 +69,11 @@ interface HotkeyScan {
 	entries: HotkeySelector[];
 	/** 清单里指向不存在（或不是 md）的路径，不再静默丢弃 */
 	brokenPaths: string[];
+}
+
+/** 构建选项：成果范围由视图按成果根注入，builder 不持有状态。 */
+export interface BuildOptions {
+	outcomeScopes?: Map<string, OutcomeScope>;
 }
 
 /** 分类规格：默认四类各有 loader/切换器键，Custom 只有兜底笔记模板。 */
@@ -140,7 +147,7 @@ export class TemplateMapBuilder {
 		private plugin: IOTOTemplateGeneratorPlugin,
 	) {}
 
-	async build(): Promise<TemplateMapModel> {
+	async build(options: BuildOptions = {}): Promise<TemplateMapModel> {
 		const generatedAt = Date.now();
 		const ioto = new IotoSettingsService(this.app).getSettings();
 
@@ -190,6 +197,7 @@ export class TemplateMapBuilder {
 					switcherCache,
 					hotkeys.entries,
 					warnings,
+					options,
 				),
 			);
 		}
@@ -295,6 +303,7 @@ export class TemplateMapBuilder {
 		switcherCache: Map<string, CachedSwitcher>,
 		hotkeys: HotkeySelector[],
 		warnings: string[],
+		options: BuildOptions,
 	): Promise<CategoryMap> {
 		const spec = CATEGORY_SPEC[usage];
 		const switcher = spec.switcherKey
@@ -332,6 +341,7 @@ export class TemplateMapBuilder {
 						resolveCtx,
 						switcherCache,
 						warnings,
+						options,
 					),
 				);
 			}
@@ -363,6 +373,7 @@ export class TemplateMapBuilder {
 					resolveCtx,
 					switcherCache,
 					warnings,
+					options,
 				),
 			);
 		}
@@ -561,6 +572,7 @@ export class TemplateMapBuilder {
 		resolveCtx: ResolveContext,
 		switcherCache: Map<string, CachedSwitcher>,
 		warnings: string[],
+		options: BuildOptions,
 	): Promise<EntryGroup> {
 		const emptySettings: FolderSettings = {
 			baseFolder: "",
@@ -569,6 +581,8 @@ export class TemplateMapBuilder {
 			matchMode: "fuzzy",
 			excludeRules: [],
 			contextNote: null,
+			outcomeRoot: null,
+			outcomeScope: null,
 			error: "selector-unreadable",
 		};
 
@@ -619,13 +633,6 @@ export class TemplateMapBuilder {
 			/\/+$/,
 			"",
 		);
-		let contextNote: string | null = null;
-
-		if (usage === "Outcome") {
-			const resolved = await this.resolveOutcomeBase(baseFolder, ioto);
-			baseFolder = resolved.baseFolder;
-			contextNote = resolved.contextNote;
-		}
 
 		const rawExcludes = value.excludesPaths;
 		const excludeText = Array.isArray(rawExcludes)
@@ -641,6 +648,30 @@ export class TemplateMapBuilder {
 			? "segment"
 			: "fuzzy";
 
+		// 范围解析要用到排除规则与开关（算项目行数），所以放在它们之后。
+		let contextNote: string | null = null;
+		let outcomeRoot: string | null = null;
+		let outcomeScope: OutcomeScopeInfo | null = null;
+
+		if (usage === "Outcome") {
+			const root =
+				baseFolder ||
+				String(ioto.outcomeFolder || "").replace(/\/+$/, "");
+			const resolved = this.resolveOutcomeBase({
+				root,
+				scope: options.outcomeScopes?.get(root),
+				showSubFolders,
+				includeParentFolder,
+				excludeRules,
+				matchMode,
+				ioto,
+			});
+			baseFolder = resolved.baseFolder;
+			contextNote = resolved.contextNote;
+			outcomeRoot = resolved.info.root;
+			outcomeScope = resolved.info;
+		}
+
 		const folderSettings: FolderSettings = {
 			baseFolder,
 			showSubFolders,
@@ -648,6 +679,8 @@ export class TemplateMapBuilder {
 			matchMode,
 			excludeRules,
 			contextNote,
+			outcomeRoot,
+			outcomeScope,
 			error: null,
 		};
 
@@ -852,46 +885,126 @@ export class TemplateMapBuilder {
 		return folders;
 	}
 
-	private async resolveOutcomeBase(
-		baseFolder: string,
-		ioto: IotoSettings,
-	): Promise<{ baseFolder: string; contextNote: string }> {
-		const outcomeFolder =
-			baseFolder || String(ioto.outcomeFolder || "").replace(/\/+$/, "");
-		const taskFolder = String(ioto.taskFolder || "").replace(/\/+$/, "");
+	/**
+	 * 成果地图的基址解析：先按活动笔记定 follow 目标，再用视图选的范围覆盖。
+	 * 每次 build 都重读活动笔记，不做缓存。
+	 */
+	private resolveOutcomeBase(input: {
+		root: string;
+		scope: OutcomeScope | undefined;
+		showSubFolders: boolean;
+		includeParentFolder: boolean;
+		excludeRules: FolderSettings["excludeRules"];
+		matchMode: "segment" | "fuzzy";
+		ioto: IotoSettings;
+	}): { baseFolder: string; contextNote: string; info: OutcomeScopeInfo } {
+		const { root } = input;
+		const taskFolder = String(input.ioto.taskFolder || "").replace(/\/+$/, "");
 		const active = this.app.workspace.getActiveFile();
 		const parentPath = active?.parent?.path ?? "";
-		if (!parentPath) {
-			return { baseFolder: outcomeFolder, contextNote: "default" };
-		}
 
-		const project = this.readProject(active);
+		let followed: string | null = null;
+		let followedSource: OutcomeScopeInfo["followedSource"] = "default";
+		let followBase = root;
+		let contextNote = "default";
+
 		const firstSegment = parentPath.split("/")[1] ?? "";
 		const insideTaskOrOutcome =
-			isPathUnder(parentPath, taskFolder) ||
-			isPathUnder(parentPath, outcomeFolder);
+			isPathUnder(parentPath, taskFolder) || isPathUnder(parentPath, root);
 		const notTaskRoot = parentPath !== taskFolder;
 
-		if (insideTaskOrOutcome && notTaskRoot && firstSegment) {
-			return {
-				baseFolder: `${outcomeFolder}/${firstSegment}`,
-				contextNote: `active:${parentPath}`,
-			};
+		if (parentPath && insideTaskOrOutcome && notTaskRoot && firstSegment) {
+			followed = firstSegment;
+			followedSource = "folder";
+			followBase = `${root}/${firstSegment}`;
+			contextNote = `active:${parentPath}`;
+		} else {
+			const project = parentPath ? this.readProject(active) : null;
+			if (
+				project &&
+				this.app.vault.getAbstractFileByPath(
+					normalizePath(`${root}/${project}`),
+				)
+			) {
+				followed = project;
+				followedSource = "project-prop";
+				followBase = `${root}/${project}`;
+				contextNote = `active:${parentPath}`;
+			}
 		}
 
-		if (
-			project &&
-			this.app.vault.getAbstractFileByPath(
-				normalizePath(`${outcomeFolder}/${project}`),
-			)
-		) {
-			return {
-				baseFolder: `${outcomeFolder}/${project}`,
-				contextNote: `active:${parentPath}`,
-			};
+		const info: OutcomeScopeInfo = {
+			root,
+			projects: this.listOutcomeProjects(
+				root,
+				input.showSubFolders,
+				input.includeParentFolder,
+				input.excludeRules,
+				input.matchMode,
+			),
+			followed,
+			followedSource,
+			applied: "follow",
+			appliedProject: null,
+			missingProject: null,
+		};
+
+		let baseFolder = followBase;
+		const scope = input.scope;
+
+		if (scope?.kind === "all") {
+			info.applied = "all";
+			baseFolder = root;
+			contextNote = "scope:all";
+		} else if (scope?.kind === "project") {
+			const target = root
+				? this.app.vault.getAbstractFileByPath(
+						normalizePath(`${root}/${scope.name}`),
+					)
+				: null;
+			if (target instanceof TFolder) {
+				info.applied = "project";
+				info.appliedProject = scope.name;
+				baseFolder = target.path;
+				contextNote = `scope:project:${scope.name}`;
+			} else {
+				// 目录被改名/删除：回退 follow，由视图给一句灰字并清掉失效选择。
+				info.applied = "fallback";
+				info.missingProject = scope.name;
+			}
 		}
 
-		return { baseFolder: outcomeFolder, contextNote: "default" };
+		return { baseFolder, contextNote, info };
+	}
+
+	/** 成果根下的直接子目录 + 每个项目的可显示行数；0 行的项目丢弃。 */
+	private listOutcomeProjects(
+		root: string,
+		showSubFolders: boolean,
+		includeParentFolder: boolean,
+		excludeRules: FolderSettings["excludeRules"],
+		matchMode: "segment" | "fuzzy",
+	): { name: string; rows: number }[] {
+		if (!root) return [];
+		const base = this.app.vault.getAbstractFileByPath(normalizePath(root));
+		if (!(base instanceof TFolder)) return [];
+
+		const projects: { name: string; rows: number }[] = [];
+		for (const child of base.children) {
+			if (!(child instanceof TFolder)) continue;
+			const rows = this.listFolders(
+				child.path,
+				showSubFolders,
+				includeParentFolder,
+			).filter(
+				(folder) =>
+					folderVisible(folder.path, excludeRules, matchMode).visible,
+			).length;
+			if (rows === 0) continue;
+			projects.push({ name: child.name, rows });
+		}
+		projects.sort((a, b) => a.name.localeCompare(b.name));
+		return projects;
 	}
 
 	private readProject(file: TFile | null): string | null {

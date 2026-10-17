@@ -18,7 +18,10 @@ import {
 	EntryGroup,
 	FileRef,
 	FolderRow,
+	FolderSettings,
 	FolderStatus,
+	OutcomeScope,
+	OutcomeScopeInfo,
 	ReverseIndexRow,
 	RuleRow,
 	TemplateMapModel,
@@ -61,6 +64,10 @@ export class TemplateMapView extends ItemView {
 	private loading = false;
 	private collapsed = new Set<string>();
 	private expanded = new Set<string>();
+	/** 条目配置注脚的展开态；key 为 `${usage}:${index}`，render() 之间保留。 */
+	private footnoteState = new Map<string, boolean>();
+	/** 成果范围按成果根存放：不同根各自独立。只在视图实例内，关视图即回默认。 */
+	private outcomeScopes = new Map<string, OutcomeScope>();
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -143,14 +150,19 @@ export class TemplateMapView extends ItemView {
 		if (this.loading) return;
 		this.loading = true;
 
+		// 两次 empty() 都会把滚动位置打回顶部，必须在它们之前取值。
+		const scrollTop = this.contentEl.scrollTop;
 		const container = this.contentEl;
 		container.empty();
 		container.addClass("ioto-template-map-container");
 
 		try {
-			const model = await this.builder.build();
+			const model = await this.builder.build({
+				outcomeScopes: this.outcomeScopes,
+			});
 			container.empty();
 			this.renderModel(container, model);
+			container.scrollTop = scrollTop;
 		} catch (error) {
 			container.empty();
 			const card = container.createDiv({
@@ -189,7 +201,7 @@ export class TemplateMapView extends ItemView {
 			this.renderCategory(container, model, category);
 		}
 
-		this.renderReverseIndex(container, model.reverseIndex);
+		this.renderReverseIndex(container, model);
 		this.renderOrphans(container, model);
 		this.renderUnmounted(container, model.unmounted);
 	}
@@ -255,29 +267,60 @@ export class TemplateMapView extends ItemView {
 			// 四类标题保持英文（避免顺带改版），Custom 用插件已有译名。
 			text: category.usage === "Custom" ? t("Custom") : category.usage,
 		});
-		headText.createSpan({
-			cls: "ioto-template-map-muted",
-			text: t("MAP_ENTRY_COUNT", {
-				count: String(category.entries.length),
-			}),
-		});
-		headText.createSpan({
-			cls: "ioto-template-map-muted",
-			text: t("MAP_RULES_COUNT", {
-				count: String(
-					category.bindingGroups.reduce(
-						(sum, group) => sum + group.rules.length,
-						0,
-					),
-				),
-			}),
-		});
-		const switcherField = headText.createSpan({
-			cls: "ioto-template-map-muted",
-		});
-		this.renderCategoryBinding(switcherField, category, true);
+		// 单入口是默认态，不该占视觉位；只有多入口才值得提示。
+		if (category.entries.length > 1) {
+			headText.createSpan({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_ENTRY_COUNT", {
+					count: String(category.entries.length),
+				}),
+			});
+		}
+		const ruleCount = category.bindingGroups.reduce(
+			(sum, group) => sum + group.rules.length,
+			0,
+		);
+		if (ruleCount > 0) {
+			headText.createSpan({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_RULES_COUNT", {
+					count: String(ruleCount),
+				}),
+			});
+		}
+		// 单切换器不在分类头出现（避免与条目注脚重复），多切换器只给计数。
+		const switcherCount = category.bindingGroups.filter(
+			(group) => group.kind === "switcher",
+		).length;
+		if (switcherCount >= 2) {
+			headText.createSpan({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_SWITCHER_COUNT", {
+					count: String(switcherCount),
+				}),
+			});
+		}
 
-		const toggle = head.createEl("button", {
+		const tools = head.createDiv({
+			cls: "ioto-template-map-card-tools",
+		});
+
+		if (category.usage === "Outcome") {
+			const scopes = this.outcomeScopesOf(category);
+			for (const info of scopes) {
+				// 多根是边缘情况：给每个下拉加一个根名做区分，单根时不加任何前缀。
+				if (scopes.length > 1) {
+					tools.createSpan({
+						cls: "ioto-template-map-muted",
+						text: info.root.split("/").pop() ?? info.root,
+					});
+				}
+				this.renderScopeSelect(tools, info);
+			}
+		}
+
+		// 折叠态也要答得出「现在看的是一个项目还是全部」，所以下拉在折叠判断之前建。
+		const toggle = tools.createEl("button", {
 			cls: "ioto-template-map-icon-btn",
 		});
 		setIcon(toggle, this.collapsed.has(category.usage) ? "chevron-right" : "chevron-down");
@@ -323,83 +366,90 @@ export class TemplateMapView extends ItemView {
 		}
 
 		this.renderRuleTable(body, category);
-
-		const sourceLine = body.createDiv({
-			cls: "ioto-template-map-source-line",
-		});
-		sourceLine.createSpan({ text: t("MAP_SOURCE_LINE_PREFIX") });
-		this.renderCategoryBinding(sourceLine, category, false);
-		sourceLine.createSpan({ text: t("MAP_SOURCE_LINE_SUFFIX") });
 	}
 
-	/** 分类级绑定摘要：唯一绑定给链接，多绑定给计数，无切换器给绑定形态。 */
-	private renderCategoryBinding(
-		container: HTMLElement,
-		category: CategoryMap,
-		includeLabel: boolean,
+	/** 同一分类可能有多入口/多成果根；按 root 去重，各出一个下拉。 */
+	private outcomeScopesOf(category: CategoryMap): OutcomeScopeInfo[] {
+		const seen = new Map<string, OutcomeScopeInfo>();
+		for (const entry of category.entries) {
+			const info = entry.folderSettings.outcomeScope;
+			if (!info || seen.has(info.root)) continue;
+			seen.set(info.root, info);
+		}
+		return [...seen.values()];
+	}
+
+	private renderScopeSelect(
+		tools: HTMLElement,
+		info: OutcomeScopeInfo,
 	): void {
-		const groups = category.bindingGroups;
-		const switchers = groups.filter((group) => group.kind === "switcher");
-
-		if (groups.length === 0) {
-			container.createSpan({ text: t("MAP_TEMPLATE_NONE") });
-			return;
-		}
-
-		if (groups.length === 1) {
-			const group = groups[0];
-			if (!group) {
-				container.createSpan({ text: t("MAP_TEMPLATE_NONE") });
-				return;
-			}
-			if (group.kind === "switcher") {
-				if (includeLabel) {
-					container.createSpan({
-						text: `${t("MAP_FIELD_SWITCHER")}: `,
-					});
-				}
-				this.renderSwitcherLink(container, group.ref);
-				return;
-			}
-			if (includeLabel) {
-				container.createSpan({
-					text: `${t("MAP_FIELD_BINDING")}: `,
-				});
-			}
-			if (group.kind === "direct-template") {
-				container.createSpan({
-					text: `${t("MAP_BINDING_DIRECT")} · `,
-				});
-				this.renderFileLink(container, group.ref);
-				return;
-			}
-			container.createSpan({
-				text:
-					group.kind === "unresolved"
-						? t("MAP_BINDING_UNRESOLVED")
-						: t("MAP_BINDING_NONE"),
-			});
-			return;
-		}
-
-		if (switchers.length === 0) {
-			container.createSpan({ text: t("MAP_BINDING_NONE") });
-			return;
-		}
-		if (includeLabel) {
-			container.createSpan({ text: `${t("MAP_FIELD_SWITCHER")}: ` });
-		}
-		container.createSpan({
-			text: t("MAP_SWITCHER_COUNT", {
-				count: String(switchers.length),
-			}),
+		const select = tools.createEl("select", {
+			cls: "dropdown ioto-template-map-scope",
 		});
+		select.setAttribute("aria-label", t("MAP_SCOPE_LABEL"));
+
+		const add = (value: string, label: string) => {
+			const option = select.createEl("option", { text: label });
+			option.value = value;
+		};
+
+		add(
+			"follow",
+			info.followed
+				? t("MAP_SCOPE_FOLLOW", { project: info.followed })
+				: t("MAP_SCOPE_FOLLOW_DEFAULT"),
+		);
+		add("all", t("MAP_SCOPE_ALL", { count: String(info.projects.length) }));
+		for (const project of info.projects) {
+			add(`project:${project.name}`, `${project.name} (${project.rows})`);
+		}
+
+		// 值从字段回填，不从 DOM 读；重建后不会漂。options 必须先追加完。
+		select.value =
+			info.applied === "all"
+				? "all"
+				: info.applied === "project" && info.appliedProject
+					? `project:${info.appliedProject}`
+					: "follow";
+
+		select.title = t(
+			info.applied === "all"
+				? "MAP_SCOPE_HINT_ALL"
+				: info.applied === "project"
+					? "MAP_SCOPE_HINT_PROJECT"
+					: "MAP_SCOPE_HINT_FOLLOW",
+		);
+
+		select.onchange = () => {
+			const value = select.value;
+			if (value === "all") {
+				this.outcomeScopes.set(info.root, { kind: "all" });
+			} else if (value.startsWith("project:")) {
+				this.outcomeScopes.set(info.root, {
+					kind: "project",
+					name: value.slice("project:".length),
+				});
+			} else {
+				this.outcomeScopes.set(info.root, { kind: "follow" });
+			}
+			void this.render();
+		};
+
+		if (info.missingProject) {
+			// 目录被改名/删除：清掉失效范围，只留一句灰字，绝不渲染空表。
+			this.outcomeScopes.delete(info.root);
+			tools.createSpan({
+				cls: "ioto-template-map-scope-note",
+				text: t("MAP_SCOPE_MISSING", { project: info.missingProject }),
+			});
+		}
 	}
 
 	/** 切换器文件本身的链接；缺失时退化成红色删除线文本。 */
 	private renderSwitcherLink(
 		container: HTMLElement,
 		ref: FileRef | null,
+		quiet = false,
 	): void {
 		if (!ref?.file) {
 			container.createSpan({
@@ -409,7 +459,7 @@ export class TemplateMapView extends ItemView {
 			return;
 		}
 		const link = container.createSpan({
-			cls: "ioto-template-map-link",
+			cls: `ioto-template-map-link${quiet ? " is-quiet" : ""}`,
 			text: ref.file.path,
 		});
 		link.title = ref.file.path;
@@ -424,88 +474,106 @@ export class TemplateMapView extends ItemView {
 		index: number,
 	): void {
 		const block = container.createDiv({ cls: "ioto-template-map-entry" });
-		const meta = block.createDiv({ cls: "ioto-template-map-entry-meta" });
+		const key = `${category.usage}:${index}`;
+		const issues = this.entryIssues(entry, category);
 
-		meta.createSpan({
-			cls: `ioto-template-map-source is-${entry.source}`,
+		let footnoteEl: HTMLElement | null = null;
+		const appendFootnote = () => {
+			// 摘要行从「表格之前」下移到「表格之后、注脚之前」：
+			// DOM 移动即可，点击监听、aria-expanded、折叠状态都跟着走。
+			const footer = block.createDiv({
+				cls: "ioto-template-map-entry-footer",
+			});
+			footer.append(summary);
+			footnoteEl = this.renderEntryFootnote(
+				footer,
+				model,
+				category,
+				entry,
+				issues,
+				key,
+			);
+		};
+
+		// 摘要行：默认只留「来源 · 选择器 · 文件夹数」，配置细节全部下沉到注脚。
+		const summary = block.createEl("button", {
+			cls: "ioto-template-map-entry-summary",
+		});
+		summary.title = t("MAP_ENTRY_DETAILS");
+		summary.setAttribute(
+			"aria-expanded",
+			String(this.footnoteState.get(key) ?? issues.length > 0),
+		);
+		const chevron = summary.createSpan({
+			cls: "ioto-template-map-entry-chevron",
+		});
+		setIcon(
+			chevron,
+			(this.footnoteState.get(key) ?? issues.length > 0)
+				? "chevron-down"
+				: "chevron-right",
+		);
+
+		summary.createSpan({
 			text: t(
 				entry.source === "loader"
 					? "MAP_ENTRY_SOURCE_LOADER"
 					: "MAP_ENTRY_SOURCE_HOTKEY",
 			),
 		});
-
-		const selector = meta.createSpan({ cls: "ioto-template-map-field" });
-		selector.createSpan({ text: `${t("MAP_FIELD_SELECTOR")}: ` });
-		const selectorLink = selector.createSpan({
+		summary.createSpan({ text: "·" });
+		summary.createSpan({ text: t("MAP_FIELD_SELECTOR") });
+		const selectorLink = summary.createSpan({
 			cls: entry.selector.file
-				? "ioto-template-map-link"
+				? "ioto-template-map-link is-quiet"
 				: "ioto-template-map-missing",
-			text: entry.selector.file?.path ?? entry.selector.name,
+			text: entry.selector.file?.basename ?? entry.selector.name,
 		});
 		if (entry.selector.file) {
-			selectorLink.onclick = () =>
+			selectorLink.title = entry.selector.file.path;
+			selectorLink.onclick = (event: MouseEvent) => {
+				// 摘要行本身是折叠开关，点链接不该连带收起/展开注脚。
+				event.stopPropagation();
 				this.openFile(entry.selector.file?.path ?? "");
+			};
 		}
-		selector.createSpan({
-			cls: "ioto-template-map-via",
-			text: this.viaLabel(entry.selector, model),
-		});
-
-		this.renderEntryBinding(meta, category, entry);
-
-		const base = meta.createSpan({ cls: "ioto-template-map-field" });
-		base.createSpan({
-			text: `${t("MAP_FIELD_BASE")}: ${entry.folderSettings.baseFolder || "—"}`,
-		});
-		if (entry.folderSettings.contextNote) {
-			base.createSpan({
-				cls: "ioto-template-map-context",
-				text:
-					entry.folderSettings.contextNote === "default"
-						? t("MAP_BASE_DEFAULT")
-						: t("MAP_BASE_CONTEXT_ACTIVE", {
-								path: entry.folderSettings.contextNote.replace(
-									/^active:/,
-									"",
-								),
-							}),
-			});
-		}
-
-		if (entry.folderSettings.excludeRules.length > 0) {
-			const whitelist = entry.folderSettings.excludeRules.filter(
-				(rule) => rule.include,
-			).length;
-			meta.createSpan({
-				cls: "ioto-template-map-field",
-				text: `${t("MAP_FIELD_EXCLUDES")}: ${t("MAP_EXCLUDES_DETAIL", {
-					count: String(entry.folderSettings.excludeRules.length),
-					include: String(whitelist),
-				})}`,
-			});
-		}
-
 		if (category.usage !== "Task") {
-			meta.createSpan({
-				cls: "ioto-template-map-field",
-				text: `${t("MAP_FOLDERS_COUNT", {
+			summary.createSpan({ text: "·" });
+			summary.createSpan({
+				text: t("MAP_FOLDERS_COUNT", {
 					count: String(entry.folders.length),
-				})} · ${t("MAP_FIELD_PATH_MODE")}: ${
-					entry.binding.kind === "switcher" && entry.binding.pathMode
-						? "on"
-						: "off"
-				}`,
+				}),
+			});
+		}
+		if (issues.length > 0) {
+			const flag = summary.createSpan({
+				cls: "is-issue",
+				text: "⚠",
+			});
+			flag.title = t("MAP_ISSUE_SUMMARY", {
+				count: String(issues.length),
+			});
+		}
+
+		summary.onclick = () => {
+			const next = !(this.footnoteState.get(key) ?? issues.length > 0);
+			this.footnoteState.set(key, next);
+			summary.setAttribute("aria-expanded", String(next));
+			setIcon(chevron, next ? "chevron-down" : "chevron-right");
+			// 只改 DOM，不整体重建，滚动位置才不会被 reset。
+			footnoteEl?.toggleClass("is-hidden", !next);
+		};
+
+		// 异常直出在摘要正下方，不随注脚折叠。
+		for (const issue of issues) {
+			block.createDiv({
+				cls: `ioto-template-map-issue${issue.error ? "" : " is-warn"}`,
+				text: issue.text,
 			});
 		}
 
 		if (entry.folderSettings.error) {
-			block.createDiv({
-				cls: "ioto-template-map-error",
-				text: t("MAP_ERROR_SELECTOR", {
-					error: entry.folderSettings.error,
-				}),
-			});
+			appendFootnote();
 			return;
 		}
 
@@ -516,15 +584,18 @@ export class TemplateMapView extends ItemView {
 			(folder) => folder.status === "excluded",
 		);
 
-		const key = `${category.usage}:${index}`;
 		const isExpanded = this.expanded.has(key);
-		const limit = 20;
+		// 全部项目模式行数天然更多，阈值放宽一档兜住；分组留待后续。
+		const appliedAll =
+			entry.folderSettings.outcomeScope?.applied === "all";
+		const limit = appliedAll ? 50 : 20;
 		const shown =
 			isExpanded || visible.length <= limit
 				? visible
 				: visible.slice(0, limit);
 
 		if (category.usage === "Task" || entry.folders.length === 0) {
+			appendFootnote();
 			return;
 		}
 
@@ -542,9 +613,18 @@ export class TemplateMapView extends ItemView {
 						count: String(visible.length),
 					}),
 				});
+			} else if (entry.binding.kind === "unresolved") {
+				line.createSpan({
+					text: `${t("MAP_BINDING_UNRESOLVED")}: `,
+				});
+				line.createSpan({
+					cls: "ioto-template-map-binding-raw",
+					text: entry.binding.raw || "—",
+				});
 			} else {
 				line.setText(t("MAP_BINDING_NONE"));
 			}
+			appendFootnote();
 			this.renderExcludedDetails(block, model, excluded);
 			return;
 		}
@@ -581,7 +661,204 @@ export class TemplateMapView extends ItemView {
 			};
 		}
 
+		appendFootnote();
 		this.renderExcludedDetails(block, model, excluded);
+	}
+
+	/** 摘要行上值得打断视线的异常；其余细节一律留在注脚与行内。 */
+	private entryIssues(
+		entry: EntryGroup,
+		category: CategoryMap,
+	): { text: string; error: boolean }[] {
+		const issues: { text: string; error: boolean }[] = [];
+		const settings = entry.folderSettings;
+
+		if (settings.error) {
+			issues.push({
+				text: t("MAP_ERROR_SELECTOR", { error: settings.error }),
+				error: true,
+			});
+		}
+
+		const binding = entry.binding;
+		if (binding.kind === "switcher") {
+			if (binding.parseError === "target-missing") {
+				issues.push({
+					text: t("MAP_ERROR_BINDING_MISSING", {
+						name: binding.ref.name,
+					}),
+					error: true,
+				});
+			}
+			if (
+				binding.forHint &&
+				USAGE_BY_FOR[binding.forHint] !== category.usage
+			) {
+				issues.push({
+					text: t("MAP_BINDING_FOR_MISMATCH", {
+						for: binding.forHint,
+					}),
+					error: false,
+				});
+			}
+		}
+
+		const missing = entry.folders.filter(
+			(folder) => folder.status === "matched-missing",
+		).length;
+		if (missing > 0) {
+			issues.push({
+				text: `${t("MAP_STATUS_MATCHED_MISSING")} ×${missing}`,
+				error: true,
+			});
+		}
+
+		return issues;
+	}
+
+	/** 条目配置注脚：默认隐藏（有异常时默认展开），与摘要行同一个开关。 */
+	private renderEntryFootnote(
+		container: HTMLElement,
+		model: TemplateMapModel,
+		category: CategoryMap,
+		entry: EntryGroup,
+		issues: { text: string; error: boolean }[],
+		key: string,
+	): HTMLElement {
+		const footnote = container.createDiv({
+			cls: "ioto-template-map-entry-footnote",
+		});
+		footnote.toggleClass(
+			"is-hidden",
+			!(this.footnoteState.get(key) ?? issues.length > 0),
+		);
+
+		const settings = entry.folderSettings;
+
+		const line1 = footnote.createDiv({
+			cls: "ioto-template-map-footnote-line",
+		});
+		line1.createSpan({
+			text: `${t("MAP_FIELD_BASE")}: ${settings.baseFolder || "—"}`,
+		});
+		if (settings.outcomeScope) {
+			this.renderScopeContext(line1, settings, settings.outcomeScope);
+		}
+		if (settings.excludeRules.length > 0) {
+			const whitelist = settings.excludeRules.filter(
+				(rule) => rule.include,
+			).length;
+			line1.createSpan({
+				text: `${t("MAP_FIELD_EXCLUDES")}: ${t("MAP_EXCLUDES_DETAIL", {
+					count: String(settings.excludeRules.length),
+					include: String(whitelist),
+				})}`,
+			});
+		}
+		if (category.usage !== "Task") {
+			line1.createSpan({
+				text: `${t("MAP_FIELD_PATH_MODE")}: ${
+					entry.binding.kind === "switcher" && entry.binding.pathMode
+						? "on"
+						: "off"
+				}`,
+			});
+		}
+
+		const binding = entry.binding;
+		const hasVia =
+			binding.kind === "switcher" ||
+			binding.kind === "direct-template" ||
+			entry.selector.via !== "prefix";
+		if (!hasVia) return footnote;
+
+		const line2 = footnote.createDiv({
+			cls: "ioto-template-map-footnote-line",
+		});
+		const appendVia = (ref: FileRef) => {
+			line2.createSpan({
+				text: `${t("MAP_DETAILS_VIA")}: ${this.viaLabel(ref, model)}`,
+			});
+		};
+
+		if (binding.kind === "switcher") {
+			line2.createSpan({ text: t("MAP_DETAILS_SWITCHER") });
+			if (binding.ref.file) {
+				const link = line2.createSpan({
+					cls: "ioto-template-map-link is-quiet",
+					text: binding.ref.file.path,
+				});
+				link.title = binding.ref.file.path;
+				link.onclick = () =>
+					this.openFile(binding.ref.file?.path ?? "");
+			} else {
+				line2.createSpan({
+					cls: "ioto-template-map-missing",
+					text: binding.ref.name || "—",
+				});
+			}
+			appendVia(binding.ref);
+			return footnote;
+		}
+
+		if (binding.kind === "direct-template") {
+			appendVia(binding.ref);
+		}
+		// 选择器的三级命中口径（My 兜底 / 原名命中）不能一并藏掉。
+		if (entry.selector.via !== "prefix") appendVia(entry.selector);
+		return footnote;
+	}
+
+	/** 基址的来源/范围口径：项目名在前，完整路径进 title。 */
+	private renderScopeContext(
+		container: HTMLElement,
+		settings: FolderSettings,
+		info: OutcomeScopeInfo,
+	): void {
+		const cls = "ioto-template-map-context";
+		const path = settings.contextNote?.replace(/^active:/, "") ?? "";
+
+		if (info.applied === "all") {
+			container.createSpan({ cls, text: t("MAP_BASE_SCOPE_ALL") });
+			return;
+		}
+		if (info.applied === "project" && info.appliedProject) {
+			container.createSpan({
+				cls,
+				text: t("MAP_BASE_SCOPE_PROJECT", {
+					project: info.appliedProject,
+				}),
+			});
+			return;
+		}
+		if (info.applied === "fallback" && info.missingProject) {
+			container.createSpan({
+				cls: "ioto-template-map-scope-note",
+				text: t("MAP_SCOPE_MISSING", { project: info.missingProject }),
+			});
+			return;
+		}
+		if (info.followedSource === "folder") {
+			const span = container.createSpan({
+				cls,
+				text: t("MAP_BASE_CONTEXT_FOLDER", {
+					project: info.followed ?? "",
+				}),
+			});
+			span.title = path;
+			return;
+		}
+		if (info.followedSource === "project-prop") {
+			const span = container.createSpan({
+				cls,
+				text: t("MAP_BASE_CONTEXT_PROPERTY", {
+					project: info.followed ?? "",
+				}),
+			});
+			span.title = `${info.root}/${info.followed ?? ""}`;
+			return;
+		}
+		container.createSpan({ cls, text: t("MAP_BASE_DEFAULT") });
 	}
 
 	private renderExcludedDetails(
@@ -607,57 +884,6 @@ export class TemplateMapView extends ItemView {
 	}
 
 	/** 条目自己的绑定：切换器 / 直连模板 / 空 / 无法静态解析。 */
-	private renderEntryBinding(
-		container: HTMLElement,
-		category: CategoryMap,
-		entry: EntryGroup,
-	): void {
-		const field = container.createSpan({ cls: "ioto-template-map-field" });
-		const binding = entry.binding;
-
-		if (binding.kind === "switcher") {
-			field.createSpan({ text: `${t("MAP_FIELD_SWITCHER")}: ` });
-			this.renderSwitcherLink(field, binding.ref);
-			if (binding.parseError === "target-missing") {
-				field.createSpan({
-					cls: "ioto-template-map-error",
-					text: t("MAP_ERROR_BINDING_MISSING", {
-						name: binding.ref.name,
-					}),
-				});
-			}
-			if (
-				binding.forHint &&
-				USAGE_BY_FOR[binding.forHint] !== category.usage
-			) {
-				field.createSpan({
-					cls: "ioto-template-map-context",
-					text: t("MAP_BINDING_FOR_MISMATCH", {
-						for: binding.forHint,
-					}),
-				});
-			}
-			return;
-		}
-
-		if (binding.kind === "direct-template") {
-			field.createSpan({ text: `${t("MAP_BINDING_DIRECT")}: ` });
-			this.renderFileLink(field, binding.ref);
-			return;
-		}
-
-		if (binding.kind === "none") {
-			field.createSpan({ text: t("MAP_BINDING_NONE") });
-			return;
-		}
-
-		field.createSpan({ text: `${t("MAP_BINDING_UNRESOLVED")}: ` });
-		field.createSpan({
-			cls: "ioto-template-map-binding-raw",
-			text: binding.raw || "—",
-		});
-	}
-
 	private renderFolderRow(
 		container: HTMLElement,
 		model: TemplateMapModel,
@@ -672,10 +898,13 @@ export class TemplateMapView extends ItemView {
 		});
 		name.style.paddingLeft = `${folder.depth * 14}px`;
 		name.onclick = () => this.revealFolder(folder.path);
-		folderCell.createSpan({
-			cls: `ioto-template-map-status is-${folder.status}`,
-			text: t(STATUS_KEY[folder.status]),
-		});
+		// 命中是默认态，只有「不一样」的状态才值得占一个徽章位。
+		if (folder.status !== "matched") {
+			folderCell.createSpan({
+				cls: `ioto-template-map-status is-${folder.status}`,
+				text: t(STATUS_KEY[folder.status]),
+			});
+		}
 		if (folder.status === "excluded" && folder.excludedBy) {
 			folderCell.createSpan({
 				cls: "ioto-template-map-excluded-by",
@@ -684,7 +913,7 @@ export class TemplateMapView extends ItemView {
 		}
 
 		const ruleCell = row.createDiv({
-			cls: "ioto-template-map-cell ioto-template-map-muted",
+			cls: "ioto-template-map-cell ioto-template-map-muted is-rule",
 		});
 		if (folder.ruleIndex !== null) {
 			const match =
@@ -696,7 +925,9 @@ export class TemplateMapView extends ItemView {
 			ruleCell.setText("—");
 		}
 
-		const templateCell = row.createDiv({ cls: "ioto-template-map-cell" });
+		const templateCell = row.createDiv({
+			cls: "ioto-template-map-cell is-template",
+		});
 		this.renderEffectiveTemplate(templateCell, model, folder);
 	}
 
@@ -730,10 +961,13 @@ export class TemplateMapView extends ItemView {
 
 		if (direct) {
 			this.renderFileLink(container, direct);
-			container.createSpan({
-				cls: "ioto-template-map-via",
-				text: this.viaLabel(direct, model),
-			});
+			// 前缀命中是默认口径，只有 My 兜底 / 原名命中才提示。
+			if (direct.via !== "prefix") {
+				container.createSpan({
+					cls: "ioto-template-map-via",
+					text: this.viaLabel(direct, model),
+				});
+			}
 			return;
 		}
 
@@ -743,6 +977,7 @@ export class TemplateMapView extends ItemView {
 	private renderFileLink(
 		container: HTMLElement,
 		ref: FileRef | null,
+		quiet = false,
 	): void {
 		if (!ref?.file) {
 			container.createSpan({
@@ -752,7 +987,7 @@ export class TemplateMapView extends ItemView {
 			return;
 		}
 		const link = container.createSpan({
-			cls: "ioto-template-map-link",
+			cls: `ioto-template-map-link${quiet ? " is-quiet" : ""}`,
 			text: ref.file.basename,
 		});
 		link.title = ref.file.path;
@@ -894,10 +1129,21 @@ export class TemplateMapView extends ItemView {
 
 	private renderReverseIndex(
 		container: HTMLElement,
-		rows: ReverseIndexRow[],
+		model: TemplateMapModel,
 	): void {
+		const rows: ReverseIndexRow[] = model.reverseIndex;
 		const card = container.createDiv({ cls: "ioto-template-map-card" });
 		card.createEl("h3", { text: t("MAP_SECTION_REVERSE") });
+
+		// 计数随范围变化：标一句口径，避免被当成固定值。
+		const scopeText = this.outcomeScopeSummary(model);
+		if (scopeText) {
+			card.createDiv({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_SCOPE_STATS", { scope: scopeText }),
+			});
+		}
+
 		if (rows.length === 0) {
 			card.createDiv({
 				cls: "ioto-template-map-muted",
@@ -928,6 +1174,31 @@ export class TemplateMapView extends ItemView {
 					.join(" · "),
 			});
 		}
+	}
+
+	private outcomeScopeSummary(model: TemplateMapModel): string | null {
+		const outcome = model.categories.find(
+			(category) => category.usage === "Outcome",
+		);
+		if (!outcome) return null;
+
+		const labels = new Set<string>();
+		for (const entry of outcome.entries) {
+			const info = entry.folderSettings.outcomeScope;
+			if (!info) continue;
+			labels.add(
+				info.applied === "all"
+					? t("MAP_BASE_SCOPE_ALL")
+					: info.applied === "project" && info.appliedProject
+						? t("MAP_BASE_SCOPE_PROJECT", {
+								project: info.appliedProject,
+							})
+						: info.followed
+							? t("MAP_SCOPE_FOLLOW", { project: info.followed })
+							: t("MAP_SCOPE_FOLLOW_DEFAULT"),
+			);
+		}
+		return labels.size > 0 ? [...labels].join(" · ") : null;
 	}
 
 	private renderOrphans(

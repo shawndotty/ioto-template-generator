@@ -60,14 +60,40 @@ export interface FolderRow {
 	excludedBy: string | null;
 }
 
+/** 成果地图的浏览范围；只在视图实例内存活，不写 data.json。 */
+export type OutcomeScope =
+	| { kind: "follow" }
+	| { kind: "all" }
+	| { kind: "project"; name: string };
+
+/** 条目级的范围描述：builder 算好，view 只画。 */
+export interface OutcomeScopeInfo {
+	/** 成果根（尊重选择器 folderPath，已去尾斜杠） */
+	root: string;
+	/** 根下一级项目 + 可显示行数（已按 excludesPaths 过滤、按名排序） */
+	projects: { name: string; rows: number }[];
+	/** follow 解析出的项目名；落到默认基址时为 null */
+	followed: string | null;
+	/** follow 是靠哪条规则命中的，决定注脚文案 */
+	followedSource: "folder" | "project-prop" | "default";
+	applied: "follow" | "all" | "project" | "fallback";
+	appliedProject: string | null;
+	/** 选了但目录已不存在时的项目名 */
+	missingProject: string | null;
+}
+
 export interface FolderSettings {
 	baseFolder: string;
 	showSubFolders: boolean;
 	includeParentFolder: boolean;
 	matchMode: "segment" | "fuzzy";
 	excludeRules: { raw: string; include: boolean }[];
-	/** 成果分类：基址被活动笔记改写时的说明，形如 `active:<path>` / `default` */
+	/** 成果分类：基址被活动笔记改写时的说明，形如 `active:<path>` / `default` / `scope:*` */
 	contextNote: string | null;
+	/** 该条目的成果根；非 Outcome 条目为 null */
+	outcomeRoot: string | null;
+	/** 该条目的范围描述；非 Outcome 条目为 null */
+	outcomeScope: OutcomeScopeInfo | null;
 	error: string | null;
 }
 
