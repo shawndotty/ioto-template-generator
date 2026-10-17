@@ -23,24 +23,96 @@ import {
 	type Locale,
 	type Ml,
 } from "./multilang";
-import { parseFolderSettings, parseSwitcherRules } from "./parser";
+import { parseFolderSettings, parseHeader, parseSelectorBinding, parseSwitcherRules } from "./parser";
 import {
-	CATEGORY_ORDER,
+	BindingGroup,
 	CategoryMap,
+	DEFAULT_CATEGORY_ORDER,
 	EntryGroup,
+	EXTRA_CATEGORY_ORDER,
 	FileRef,
 	FolderRow,
 	FolderSettings,
 	ReverseIndexRow,
 	RuleRow,
+	SelectorHeader,
+	SwitcherBinding,
 	TaskBranch,
 	TaskSlot,
 	TemplateMapModel,
+	UnmountedRow,
+	USAGE_BY_FOR,
 } from "./types";
 
 interface ContentCacheEntry {
 	mtime: number;
 	text: string;
+}
+
+interface CachedSwitcher {
+	type: SelectorHeader["type"];
+	rules: RuleRow[];
+	pathMode: boolean;
+	defaultTemplateName: string | null;
+	forHint: string | null;
+	error: string | null;
+}
+
+interface HotkeySelector {
+	file: TFile;
+	header: SelectorHeader;
+}
+
+interface HotkeyScan {
+	entries: HotkeySelector[];
+	/** 清单里指向不存在（或不是 md）的路径，不再静默丢弃 */
+	brokenPaths: string[];
+}
+
+/** 分类规格：默认四类各有 loader/切换器键，Custom 只有兜底笔记模板。 */
+const CATEGORY_SPEC: Record<
+	Usage,
+	{ selectorKey: string | null; switcherKey: string | null; noteKey: string }
+> = {
+	Input: {
+		selectorKey: "IOTODefaultInputSelector",
+		switcherKey: "IOTODefaultInputSwitcherTemplate",
+		noteKey: "IOTODefaultInputNoteTemplate",
+	},
+	Output: {
+		selectorKey: "IOTODefaultOutputSelector",
+		switcherKey: "IOTODefaultOutputSwitcherTemplate",
+		noteKey: "IOTODefaultOutputNoteTemplate",
+	},
+	Outcome: {
+		selectorKey: "IOTODefaultOutcomeSelector",
+		switcherKey: "IOTODefaultOutcomeSwitcherTemplate",
+		noteKey: "IOTODefaultOutcomeNoteTemplate",
+	},
+	Task: {
+		selectorKey: "IOTODefaultTaskSelector",
+		switcherKey: "IOTODefaultTaskSwitcherTemplate",
+		noteKey: "IOTODefaultTaskNoteTemplate",
+	},
+	Custom: {
+		selectorKey: null,
+		switcherKey: null,
+		noteKey: "IOTODefaultCustomNoteTemplate",
+	},
+};
+
+/** 绑定归并键：切换器/直连按文件路径，空与无法解析各自成组。 */
+function bindingKey(binding: SwitcherBinding): string {
+	switch (binding.kind) {
+		case "switcher":
+			return `sw:${binding.ref.file?.path ?? binding.ref.name}`;
+		case "direct-template":
+			return `dt:${binding.ref.file?.path ?? binding.ref.name}`;
+		case "none":
+			return "none";
+		default:
+			return `unres:${binding.raw}`;
+	}
 }
 
 interface IotoUpdateLike {
@@ -81,6 +153,7 @@ export class TemplateMapBuilder {
 				useUserTemplate: true,
 				categories: [],
 				reverseIndex: [],
+				unmounted: [],
 				orphans: { missingTargets: [], unreferencedTemplates: [] },
 				warnings: ["no-ioto-settings"],
 			};
@@ -98,14 +171,24 @@ export class TemplateMapBuilder {
 			lookup: (name) => this.lookup(name),
 		};
 
+		const switcherCache = new Map<string, CachedSwitcher>();
+		const hotkeys = await this.collectHotkeySelectors(warnings);
+		const extraUsages = EXTRA_CATEGORY_ORDER.filter((usage) =>
+			hotkeys.entries.some(
+				(item) => USAGE_BY_FOR[item.header.for ?? ""] === usage,
+			),
+		);
+
 		const categories: CategoryMap[] = [];
-		for (const usage of CATEGORY_ORDER) {
+		for (const usage of [...DEFAULT_CATEGORY_ORDER, ...extraUsages]) {
 			categories.push(
 				await this.buildCategory(
 					usage,
 					ioto,
 					runtime.ml,
 					resolveCtx,
+					switcherCache,
+					hotkeys.entries,
 					warnings,
 				),
 			);
@@ -119,6 +202,7 @@ export class TemplateMapBuilder {
 			useUserTemplate,
 			categories,
 			reverseIndex: this.buildReverseIndex(categories),
+			unmounted: await this.collectUnmounted(categories, hotkeys, warnings),
 			orphans: this.buildOrphans(categories, warnings),
 			warnings,
 		};
@@ -208,16 +292,22 @@ export class TemplateMapBuilder {
 		ioto: IotoSettings,
 		ml: Ml,
 		resolveCtx: ResolveContext,
+		switcherCache: Map<string, CachedSwitcher>,
+		hotkeys: HotkeySelector[],
 		warnings: string[],
 	): Promise<CategoryMap> {
-		const switcherName = ml.t(`IOTODefault${usage}SwitcherTemplate`);
-		const switcher = resolveName(switcherName, resolveCtx);
+		const spec = CATEGORY_SPEC[usage];
+		const switcher = spec.switcherKey
+			? resolveName(ml.t(spec.switcherKey), resolveCtx)
+			: this.emptyRef("");
 
-		if (!switcher.file) {
+		// Custom 没有默认切换器键：不判定 switcher-missing，零入口也就不建卡。
+		if (spec.switcherKey && !switcher.file) {
 			warnings.push(`switcher-missing:${usage}`);
 			return {
 				usage,
 				entries: [],
+				bindingGroups: [],
 				switcher,
 				pathMode: false,
 				rules: [],
@@ -226,70 +316,161 @@ export class TemplateMapBuilder {
 			};
 		}
 
-		const switcherText = (await this.readText(switcher.file.path)) ?? "";
-		const parsed = parseSwitcherRules(switcherText, ml);
+		const entries: EntryGroup[] = [];
 
-		const defaultName =
-			parsed.defaultTemplateName ??
-			ml.t(`IOTODefault${usage}NoteTemplate`);
-		const defaultTemplate = resolveName(defaultName, resolveCtx);
+		if (spec.selectorKey) {
+			const loaderRef = resolveName(ml.t(spec.selectorKey), resolveCtx);
+			if (loaderRef.file) {
+				entries.push(
+					await this.buildEntry(
+						"loader",
+						loaderRef,
+						usage,
+						spec,
+						ioto,
+						ml,
+						resolveCtx,
+						switcherCache,
+						warnings,
+					),
+				);
+			}
+		}
 
-		const rules = this.buildRules(parsed.rules, resolveCtx);
+		// 热键入口按 `** for:` 归组，不再按当前分类预过滤。
+		for (const item of hotkeys) {
+			if (USAGE_BY_FOR[item.header.for ?? ""] !== usage) continue;
+			if (
+				entries.some(
+					(entry) => entry.selector.file?.path === item.file.path,
+				)
+			) {
+				continue;
+			}
+			entries.push(
+				await this.buildEntry(
+					"hotkey",
+					{
+						name: item.file.basename,
+						file: item.file,
+						via: "direct",
+						candidates: [item.file.basename],
+					},
+					usage,
+					spec,
+					ioto,
+					ml,
+					resolveCtx,
+					switcherCache,
+					warnings,
+				),
+			);
+		}
 
-		const entries = await this.buildEntries(
-			usage,
-			ioto,
-			parsed,
-			ml,
-			rules,
-			warnings,
-		);
+		if (entries.length === 0 && spec.selectorKey) {
+			warnings.push(`selector-missing:${usage}`);
+		}
+
+		const bindingGroups = this.aggregateBindings(entries);
+		const single = bindingGroups.length === 1 ? bindingGroups[0] : null;
+		const singleSwitcher = single?.kind === "switcher" ? single : null;
 
 		const taskSlots =
 			usage === "Task" ? this.buildTaskSlots(ml, resolveCtx) : undefined;
 		const taskBranches =
 			usage === "Task" ? this.buildTaskBranches(entries) : undefined;
 
-		// reachCount 要等文件夹枚举完成，跨入口统一统计。
-		const reach = new Map<number, number>();
-		for (const entry of entries) {
-			for (const folder of entry.folders) {
-				if (folder.ruleIndex === null) continue;
-				reach.set(folder.ruleIndex, (reach.get(folder.ruleIndex) ?? 0) + 1);
-			}
-			for (const folder of entry.folders) {
-				folder.effectiveTemplate = this.pickEffective(
-					folder,
-					defaultTemplate,
-				);
-			}
-		}
-		for (const rule of rules) {
-			rule.reachCount = reach.get(rule.index) ?? 0;
-		}
-
 		return {
 			usage,
 			entries,
-			switcher,
-			pathMode: parsed.pathMode,
-			rules,
-			defaultTemplate,
+			bindingGroups,
+			switcher: singleSwitcher ? singleSwitcher.ref : null,
+			pathMode: singleSwitcher ? singleSwitcher.pathMode : false,
+			rules: singleSwitcher ? singleSwitcher.rules : [],
+			defaultTemplate: singleSwitcher
+				? singleSwitcher.defaultTemplate
+				: null,
 			taskSlots,
 			taskBranches,
-			error: parsed.error,
+			error: singleSwitcher ? singleSwitcher.error : null,
 		};
 	}
 
-	private pickEffective(
+	/** 同一分类内按绑定归并；可达数与生效模板都按绑定计算。 */
+	private aggregateBindings(entries: EntryGroup[]): BindingGroup[] {
+		const groups = new Map<string, BindingGroup>();
+		const buckets = new Map<string, EntryGroup[]>();
+
+		for (const entry of entries) {
+			const key = bindingKey(entry.binding);
+			// 缺省的分组容器必须先建，后两条 entry 才能落到同一组。
+			if (!groups.has(key)) {
+				const binding = entry.binding;
+				groups.set(key, {
+					key,
+					kind: binding.kind,
+					ref:
+						binding.kind === "switcher" ||
+						binding.kind === "direct-template"
+							? binding.ref
+							: null,
+					rules: binding.kind === "switcher" ? binding.rules : [],
+					defaultTemplate:
+						binding.kind === "switcher"
+							? binding.defaultTemplate
+							: null,
+					pathMode:
+						binding.kind === "switcher" ? binding.pathMode : false,
+					error:
+						binding.kind === "switcher"
+							? binding.parseError
+							: binding.kind === "unresolved"
+								? binding.reason
+								: null,
+					forHint:
+						binding.kind === "switcher" ? binding.forHint : null,
+				});
+				buckets.set(key, []);
+			}
+			buckets.get(key)?.push(entry);
+		}
+
+		for (const [key, group] of groups) {
+			const members = buckets.get(key) ?? [];
+			const reach = new Map<number, number>();
+			for (const entry of members) {
+				for (const folder of entry.folders) {
+					if (folder.ruleIndex === null) continue;
+					reach.set(
+						folder.ruleIndex,
+						(reach.get(folder.ruleIndex) ?? 0) + 1,
+					);
+				}
+			}
+			for (const rule of group.rules) {
+				rule.reachCount = reach.get(rule.index) ?? 0;
+			}
+			for (const entry of members) {
+				for (const folder of entry.folders) {
+					folder.effectiveTemplate = this.effectiveFor(folder, group);
+				}
+			}
+		}
+
+		return Array.from(groups.values());
+	}
+
+	private effectiveFor(
 		folder: FolderRow,
-		defaultTemplate: FileRef,
+		group: BindingGroup,
 	): FileRef | null {
 		if (folder.status === "excluded") return null;
 		if (folder.status === "matched" || folder.status === "empty-match") {
 			return folder.template;
 		}
-		return defaultTemplate;
+		if (folder.status === "direct") return group.ref;
+		if (folder.status === "no-template") return null;
+		return group.defaultTemplate;
 	}
 
 	private buildRules(
@@ -340,91 +521,45 @@ export class TemplateMapBuilder {
 		return { name, file: null, via: "plain", candidates: name ? [name] : [] };
 	}
 
-	private async buildEntries(
-		usage: Usage,
-		ioto: IotoSettings,
-		parsed: ReturnType<typeof parseSwitcherRules>,
-		ml: Ml,
-		rules: RuleRow[],
+	/** 热键清单只扫一次；分类归属交给调用方按 `for:` 判定。 */
+	private async collectHotkeySelectors(
 		warnings: string[],
-	): Promise<EntryGroup[]> {
-		const resolveCtx: ResolveContext = {
-			prefix: String(ioto.userTemplatePrefix || "My"),
-			useUserTemplate: ioto.useUserTemplate !== false,
-			lookup: (name) => this.lookup(name),
-		};
+	): Promise<HotkeyScan> {
+		const entries: HotkeySelector[] = [];
+		const brokenPaths: string[] = [];
+		const paths = await this.getHotkeyPaths(warnings);
+		if (!paths) return { entries, brokenPaths };
 
-		const entries: EntryGroup[] = [];
-
-		const loaderName = ml.t(`IOTODefault${usage}Selector`);
-		const loaderRef = resolveName(loaderName, resolveCtx);
-		if (loaderRef.file) {
-			entries.push(
-				await this.buildEntry(
-					"loader",
-					loaderRef,
-					usage,
-					ioto,
-					parsed.pathMode,
-					rules,
-					warnings,
-				),
+		for (const path of paths) {
+			const file = this.app.vault.getAbstractFileByPath(
+				normalizePath(path),
 			);
-		}
-
-		const hotkeyPaths = await this.getHotkeyPaths(warnings);
-		if (hotkeyPaths) {
-			for (const path of hotkeyPaths) {
-				const file = this.app.vault.getAbstractFileByPath(
-					normalizePath(path),
-				);
-				if (!(file instanceof TFile) || file.extension !== "md") continue;
-				if (loaderRef.file && file.path === loaderRef.file.path) continue;
-
-				const text = (await this.readText(file.path)) ?? "";
-				if (!/\*\*\s*type:\s*selector\b/i.test(text)) continue;
-				const forMatch = /\*\*\s*for:\s*([A-Za-z]+)/i.exec(text);
-				if (
-					!forMatch?.[1] ||
-					forMatch[1].toLowerCase() !== usage.toLowerCase()
-				) {
-					continue;
-				}
-
-				entries.push(
-					await this.buildEntry(
-						"hotkey",
-						{
-							name: file.basename,
-							file,
-							via: "direct",
-							candidates: [file.basename],
-						},
-						usage,
-						ioto,
-						parsed.pathMode,
-						rules,
-						warnings,
-					),
-				);
+			if (!(file instanceof TFile) || file.extension !== "md") {
+				brokenPaths.push(path);
+				continue;
 			}
+			const text = (await this.readText(file.path)) ?? "";
+			const header = parseHeader(text);
+			if (header.type !== "selector") continue;
+			if (header.for && !USAGE_BY_FOR[header.for]) {
+				warnings.push(`selector-for-unknown:${file.basename}`);
+				continue;
+			}
+			entries.push({ file, header });
 		}
 
-		// 没有 loader 入口时，至少把切换器本身画出来，便于排错。
-		if (entries.length === 0) {
-			warnings.push(`selector-missing:${usage}`);
-		}
-
-		return entries;
+		return { entries, brokenPaths };
 	}
 
 	private async buildEntry(
 		source: "loader" | "hotkey",
 		selector: FileRef,
 		usage: Usage,
+		spec: { selectorKey: string | null; switcherKey: string | null; noteKey: string },
 		ioto: IotoSettings,
-		pathMode: boolean,
-		rules: RuleRow[],
+		ml: Ml,
+		resolveCtx: ResolveContext,
+		switcherCache: Map<string, CachedSwitcher>,
 		warnings: string[],
 	): Promise<EntryGroup> {
 		const emptySettings: FolderSettings = {
@@ -438,13 +573,34 @@ export class TemplateMapBuilder {
 		};
 
 		if (!selector.file) {
-			return { source, selector, folderSettings: emptySettings, folders: [] };
+			return {
+				source,
+				selector,
+				folderSettings: emptySettings,
+				binding: { kind: "none" },
+				folders: [],
+			};
 		}
 
 		const text = await this.readText(selector.file.path);
-		if (!text) {
-			return { source, selector, folderSettings: emptySettings, folders: [] };
+		if (text === null) {
+			return {
+				source,
+				selector,
+				folderSettings: emptySettings,
+				binding: { kind: "none" },
+				folders: [],
+			};
 		}
+
+		// 绑定与文件夹配置互不依赖：配置解析失败时也要看得见条目绑定。
+		const binding = await this.resolveBinding(
+			text,
+			spec,
+			ml,
+			resolveCtx,
+			switcherCache,
+		);
 
 		const parsed = parseFolderSettings(text, { ...ioto });
 		if (!parsed.value || parsed.error) {
@@ -452,6 +608,7 @@ export class TemplateMapBuilder {
 				source,
 				selector,
 				folderSettings: { ...emptySettings, error: parsed.error },
+				binding,
 				folders: [],
 			};
 		}
@@ -502,43 +659,156 @@ export class TemplateMapBuilder {
 
 		// Task 只画规则表与模板槽，不画文件夹树。
 		if (usage === "Task") {
-			return { source, selector, folderSettings, folders: [] };
+			return { source, selector, folderSettings, binding, folders: [] };
 		}
 
 		const folders: FolderRow[] = list.map((folder) =>
-			this.buildFolderRow(
-				folder,
-				baseFolder,
-				folderSettings,
-				rules,
-				pathMode,
-			),
+			this.buildFolderRow(folder, baseFolder, folderSettings, binding),
 		);
 
-		return { source, selector, folderSettings, folders };
+		return { source, selector, folderSettings, binding, folders };
+	}
+
+	/** 读选择器的 `noteSettings.template`，再按目标文件身份分派四种绑定形态。 */
+	private async resolveBinding(
+		content: string,
+		spec: { noteKey: string },
+		ml: Ml,
+		resolveCtx: ResolveContext,
+		switcherCache: Map<string, CachedSwitcher>,
+	): Promise<SwitcherBinding> {
+		const parsed = parseSelectorBinding(content, ml);
+		if (parsed.kind === "none") return { kind: "none" };
+		if (parsed.kind === "unresolved") {
+			return { kind: "unresolved", raw: parsed.raw, reason: parsed.reason };
+		}
+
+		const ref = resolveName(parsed.name, resolveCtx);
+		if (!ref.file) {
+			// 名字解析不到时保留红色名字，绝不假装成直连模板。
+			return {
+				kind: "switcher",
+				ref,
+				rules: [],
+				defaultTemplate: null,
+				pathMode: false,
+				forHint: null,
+				parseError: "target-missing",
+			};
+		}
+
+		const cached = await this.loadSwitcher(
+			ref.file.path,
+			ml,
+			resolveCtx,
+			switcherCache,
+		);
+		if (cached.type !== "switcher") {
+			return { kind: "direct-template", ref };
+		}
+
+		const defaultName = cached.defaultTemplateName ?? ml.t(spec.noteKey);
+		return {
+			kind: "switcher",
+			ref,
+			rules: cached.rules,
+			defaultTemplate: resolveName(defaultName, resolveCtx),
+			pathMode: cached.pathMode,
+			forHint: cached.forHint,
+			parseError: cached.error,
+		};
+	}
+
+	/** 同一切换器只解析一次：规则数组按路径共享，reach 按绑定分组统计。 */
+	private async loadSwitcher(
+		path: string,
+		ml: Ml,
+		resolveCtx: ResolveContext,
+		cache: Map<string, CachedSwitcher>,
+	): Promise<CachedSwitcher> {
+		const cached = cache.get(path);
+		if (cached) return cached;
+
+		const text = (await this.readText(path)) ?? "";
+		const header = parseHeader(text);
+
+		if (header.type !== "switcher") {
+			const entry: CachedSwitcher = {
+				type: header.type,
+				rules: [],
+				pathMode: false,
+				defaultTemplateName: null,
+				forHint: header.for,
+				error: null,
+			};
+			cache.set(path, entry);
+			return entry;
+		}
+
+		const parsed = parseSwitcherRules(text, ml);
+		const entry: CachedSwitcher = {
+			type: header.type,
+			rules: this.buildRules(parsed.rules, resolveCtx),
+			pathMode: parsed.pathMode,
+			defaultTemplateName: parsed.defaultTemplateName,
+			forHint: header.for,
+			error: parsed.error,
+		};
+		cache.set(path, entry);
+		return entry;
 	}
 
 	/**
-	 * 文件夹行只依赖「规则表」，而规则表由切换器解析得到；
+	 * 文件夹行只依赖「该条目自己的绑定」；规则表由切换器解析得到，
 	 * 这里用同一个 resolve 结果重建，避免把规则对象跨入口共享后被 reachCount 污染。
 	 */
 	private buildFolderRow(
 		folder: TFolder,
 		baseFolder: string,
 		settings: FolderSettings,
-		rules: RuleRow[],
-		pathMode: boolean,
+		binding: SwitcherBinding,
 	): FolderRow {
-		const prefix = folderPrefix(folder.path, pathMode);
-		const picked = pickRule(prefix, rules);
-		// FolderRow.ruleIndex 与 RuleRow.index 一样是 1 起，视图直接显示。
-		const ruleIndex = picked === null ? null : picked + 1;
-		const rule = picked === null ? null : (rules[picked] ?? null);
 		const visibility = folderVisible(
 			folder.path,
 			settings.excludeRules,
 			settings.matchMode,
 		);
+
+		const baseSegments = baseFolder.split("/").filter(Boolean).length;
+		const depth = Math.max(
+			0,
+			folder.path.split("/").filter(Boolean).length - baseSegments,
+		);
+
+		const common = {
+			path: folder.path,
+			name: folder.name,
+			depth,
+			effectiveTemplate: null,
+			excludedBy: visibility.excludedBy,
+		};
+
+		// 直连模板 / 空绑定没有规则可命中，状态由绑定种类直接决定。
+		if (binding.kind !== "switcher") {
+			return {
+				...common,
+				status: visibility.visible
+					? binding.kind === "direct-template"
+						? "direct"
+						: "no-template"
+					: "excluded",
+				ruleIndex: null,
+				match: null,
+				template:
+					binding.kind === "direct-template" ? binding.ref : null,
+			};
+		}
+
+		const prefix = folderPrefix(folder.path, binding.pathMode);
+		const picked = pickRule(prefix, binding.rules);
+		// FolderRow.ruleIndex 与 RuleRow.index 一样是 1 起，视图直接显示。
+		const ruleIndex = picked === null ? null : picked + 1;
+		const rule = picked === null ? null : (binding.rules[picked] ?? null);
 
 		const status = classify({
 			excluded: !visibility.visible,
@@ -547,22 +817,12 @@ export class TemplateMapBuilder {
 			hasTemplate: Boolean(rule?.template.file),
 		});
 
-		const baseSegments = baseFolder.split("/").filter(Boolean).length;
-		const depth = Math.max(
-			0,
-			folder.path.split("/").filter(Boolean).length - baseSegments,
-		);
-
 		return {
-			path: folder.path,
-			name: folder.name,
-			depth,
+			...common,
 			status,
 			ruleIndex,
 			match: rule?.match ?? null,
 			template: rule?.template ?? null,
-			effectiveTemplate: null,
-			excludedBy: visibility.excludedBy,
 		};
 	}
 
@@ -735,6 +995,102 @@ export class TemplateMapBuilder {
 		}
 	}
 
+	/** 未被任何入口挂载的选择器/切换器，外加失效的热键路径。 */
+	private async collectUnmounted(
+		categories: CategoryMap[],
+		hotkeys: HotkeyScan,
+		warnings: string[],
+	): Promise<UnmountedRow[]> {
+		const usedSelectors = new Set<string>();
+		const usedSwitchers = new Set<string>();
+
+		for (const category of categories) {
+			for (const entry of category.entries) {
+				if (entry.selector.file) usedSelectors.add(entry.selector.file.path);
+				const binding = entry.binding;
+				if (binding.kind === "switcher" && binding.ref.file) {
+					usedSwitchers.add(binding.ref.file.path);
+				}
+			}
+		}
+		// 热键挂载即「已使用」，即使它的 `for:` 解析不出分类。
+		for (const item of hotkeys.entries) usedSelectors.add(item.file.path);
+
+		const rows: UnmountedRow[] = [];
+
+		const collect = async (
+			root: string,
+			type: "selector" | "switcher",
+		): Promise<void> => {
+			if (!root) return;
+			const used = type === "selector" ? usedSelectors : usedSwitchers;
+
+			for (const file of this.listMarkdownFiles(root)) {
+				const text = (await this.readText(file.path)) ?? "";
+				const header = parseHeader(text);
+				if (header.type !== type) continue;
+				if (used.has(file.path)) continue;
+				rows.push({
+					type,
+					name: file.basename,
+					path: file.path,
+					file,
+					for: header.for,
+					reason: type === "selector" ? "no-hotkey" : "no-selector",
+				});
+			}
+		};
+
+		await collect(
+			String(this.plugin.settings.selectorFolderPath || ""),
+			"selector",
+		);
+		await collect(
+			String(this.plugin.settings.switcherFolderPath || ""),
+			"switcher",
+		);
+
+		for (const path of hotkeys.brokenPaths) {
+			const segments = path.split("/");
+			rows.push({
+				type: "unknown",
+				name: segments[segments.length - 1] ?? path,
+				path,
+				file: null,
+				for: null,
+				reason: "hotkey-missing",
+			});
+		}
+
+		rows.sort((a, b) => {
+			if (a.type !== b.type) return a.type.localeCompare(b.type);
+			return a.path.localeCompare(b.path);
+		});
+		if (rows.length > 0) warnings.push(`unmounted:${rows.length}`);
+
+		return rows;
+	}
+
+	private listMarkdownFiles(root: string): TFile[] {
+		const folder = this.app.vault.getAbstractFileByPath(normalizePath(root));
+		if (!(folder instanceof TFolder)) return [];
+
+		const files: TFile[] = [];
+		const walk = (parent: TFolder) => {
+			for (const child of parent.children) {
+				if (child instanceof TFolder) {
+					walk(child);
+					continue;
+				}
+				if (child instanceof TFile && child.extension === "md") {
+					files.push(child);
+				}
+			}
+		};
+		walk(folder);
+		return files.sort((a, b) => a.path.localeCompare(b.path));
+	}
+
 	// —— 反向索引与孤儿 ——
 
 	private buildReverseIndex(categories: CategoryMap[]): ReverseIndexRow[] {
@@ -768,9 +1124,34 @@ export class TemplateMapBuilder {
 		};
 
 		for (const category of categories) {
-			add(category.defaultTemplate, category.usage, null, 0);
-			for (const rule of category.rules) {
-				add(rule.template, category.usage, rule.index, rule.reachCount);
+			const visible = new Map<string, number>();
+			for (const entry of category.entries) {
+				const key = bindingKey(entry.binding);
+				const count = entry.folders.filter(
+					(folder) => folder.status !== "excluded",
+				).length;
+				visible.set(key, (visible.get(key) ?? 0) + count);
+			}
+
+			for (const group of category.bindingGroups) {
+				if (group.kind === "switcher") {
+					for (const rule of group.rules) {
+						add(
+							rule.template,
+							category.usage,
+							rule.index,
+							rule.reachCount,
+						);
+					}
+					add(group.defaultTemplate, category.usage, null, 0);
+				} else if (group.kind === "direct-template") {
+					add(
+						group.ref,
+						category.usage,
+						null,
+						visible.get(group.key) ?? 0,
+					);
+				}
 			}
 			for (const slot of category.taskSlots ?? []) {
 				add(slot.template, category.usage, null, 0);
@@ -791,20 +1172,50 @@ export class TemplateMapBuilder {
 	): TemplateMapModel["orphans"] {
 		const missingTargets: TemplateMapModel["orphans"]["missingTargets"] = [];
 		const referenced = new Set<string>();
+		const seenMissing = new Set<string>();
+
+		const addMissing = (
+			usage: Usage,
+			ruleIndex: number | null,
+			name: string,
+			source: "rule" | "default" | "binding",
+		) => {
+			const key = `${usage}|${ruleIndex}|${name}|${source}`;
+			if (seenMissing.has(key)) return;
+			seenMissing.add(key);
+			missingTargets.push({ usage, ruleIndex, name, source });
+		};
 
 		for (const category of categories) {
-			if (category.defaultTemplate?.file) {
-				referenced.add(category.defaultTemplate.file.path);
-			}
-			for (const rule of category.rules) {
-				if (rule.template.file) {
-					referenced.add(rule.template.file.path);
-				} else if (rule.templateName) {
-					missingTargets.push({
-						usage: category.usage,
-						ruleIndex: rule.index,
-						name: rule.templateName,
-					});
+			for (const group of category.bindingGroups) {
+				if (group.kind === "switcher") {
+					if (group.error === "target-missing" && group.ref) {
+						addMissing(category.usage, null, group.ref.name, "binding");
+					}
+					if (group.defaultTemplate?.file) {
+						referenced.add(group.defaultTemplate.file.path);
+					} else if (group.defaultTemplate) {
+						addMissing(
+							category.usage,
+							null,
+							group.defaultTemplate.name,
+							"default",
+						);
+					}
+					for (const rule of group.rules) {
+						if (rule.template.file) {
+							referenced.add(rule.template.file.path);
+						} else if (rule.templateName) {
+							addMissing(
+								category.usage,
+								rule.index,
+								rule.templateName,
+								"rule",
+							);
+						}
+					}
+				} else if (group.kind === "direct-template" && group.ref?.file) {
+					referenced.add(group.ref.file.path);
 				}
 			}
 			for (const slot of category.taskSlots ?? []) {
@@ -827,18 +1238,9 @@ export class TemplateMapBuilder {
 			return { missingTargets, unreferencedTemplates: unreferenced };
 		}
 
-		const walk = (parent: TFolder) => {
-			for (const child of parent.children) {
-				if (child instanceof TFolder) {
-					walk(child);
-					continue;
-				}
-				if (child instanceof TFile && child.extension === "md") {
-					if (!referenced.has(child.path)) unreferenced.push(child);
-				}
-			}
-		};
-		walk(folder);
+		for (const file of this.listMarkdownFiles(folder.path)) {
+			if (!referenced.has(file.path)) unreferenced.push(file);
+		}
 		unreferenced.sort((a, b) => a.path.localeCompare(b.path));
 
 		return { missingTargets, unreferencedTemplates: unreferenced };

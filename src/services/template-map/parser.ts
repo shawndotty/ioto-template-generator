@@ -1,5 +1,6 @@
 import type { Ml } from "./multilang";
 import { findMatchingBrace } from "./multilang";
+import type { SelectorHeader } from "./types";
 
 /**
  * 用「带桩作用域」求值选择器/切换器脚本里的配置对象。
@@ -8,6 +9,157 @@ import { findMatchingBrace } from "./multilang";
  * 以便重新生成脚本，这里要的是**求值后的值**（地图展示的是运行时真正用的东西）。
  * 求值失败必须显式报错，不许静默返回 `{}`。
  */
+
+/** 选择器头注释：`** type:` 定身份，`** for:` 定分类。 */
+export function parseHeader(content: string): SelectorHeader {
+	const typeMatch = /\*\*\s*type\s*:\s*(selector|switcher)\b/i.exec(content);
+	const forMatch = /\*\*\s*for\s*:\s*([A-Za-z]+)/i.exec(content);
+	const type = typeMatch?.[1]?.toLowerCase();
+	return {
+		type: type === "selector" || type === "switcher" ? type : null,
+		for: forMatch?.[1] ? forMatch[1].toLowerCase() : null,
+	};
+}
+
+/** `noteSettings.template` 的静态形态；解析不了就显式 unresolved，绝不 eval。 */
+export type BindingParse =
+	| {
+			kind: "name";
+			name: string;
+			via: "literal" | "mlt" | "identifier-mlt" | "identifier-literal";
+			/** `via` 为 mlt / identifier-mlt 时的字典键 */
+			key: string | null;
+	  }
+	| { kind: "none" }
+	| {
+			kind: "unresolved";
+			raw: string;
+			reason:
+				| "no-note-settings"
+				| "no-template-field"
+				| "dynamic-expression"
+				| "unknown-identifier";
+	  };
+
+const ML_CALL = /^ml\.t\(\s*(["'`])([A-Za-z0-9_]+)\1\s*\)$/;
+const ML_CALL_ANYWHERE = /ml\.t\(\s*(["'`])([A-Za-z0-9_]+)\1\s*\)/;
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+const LOAD_TEMPLATE_LITERAL =
+	/IOTOLoadTemplate(?:\.load)?\([\s\S]*?["']([^"']+)["']/;
+
+function isQuoted(value: string): boolean {
+	const first = value[0];
+	return (
+		value.length >= 2 &&
+		(first === '"' || first === "'" || first === "`") &&
+		value.endsWith(first)
+	);
+}
+
+/** 取 `const <id> = <右值>`；右值停在分号或换行，够覆盖本库的全部写法。 */
+function findConstRightHand(content: string, identifier: string): string | null {
+	const regex = new RegExp(
+		`const\\s+${identifier}\\s*=\\s*([^;\\n]+)`,
+	);
+	const match = regex.exec(content);
+	return match?.[1] ? match[1].trim() : null;
+}
+
+function classifyIdentifier(
+	value: string,
+	ml: Ml,
+	content: string,
+): BindingParse {
+	const rhs = findConstRightHand(content, value);
+	if (rhs === null) {
+		return { kind: "unresolved", raw: value, reason: "unknown-identifier" };
+	}
+
+	const mlCall = ML_CALL_ANYWHERE.exec(rhs);
+	if (mlCall?.[2]) {
+		return {
+			kind: "name",
+			name: ml.t(mlCall[2]),
+			via: "identifier-mlt",
+			key: mlCall[2],
+		};
+	}
+
+	const loadCall = LOAD_TEMPLATE_LITERAL.exec(rhs);
+	if (loadCall?.[1]) {
+		return {
+			kind: "name",
+			name: loadCall[1],
+			via: "identifier-literal",
+			key: null,
+		};
+	}
+
+	if (isQuoted(rhs)) {
+		const inner = rhs.slice(1, -1);
+		if (inner === "") return { kind: "none" };
+		if (rhs.startsWith("`") && inner.includes("${")) {
+			return { kind: "unresolved", raw: value, reason: "dynamic-expression" };
+		}
+		return { kind: "name", name: inner, via: "literal", key: null };
+	}
+
+	return { kind: "unresolved", raw: value, reason: "unknown-identifier" };
+}
+
+function classifyValue(
+	token: string,
+	ml: Ml,
+	content: string,
+): BindingParse {
+	const value = token.trim();
+	if (!value) return { kind: "none" };
+
+	if (isQuoted(value)) {
+		const inner = value.slice(1, -1);
+		if (value.startsWith("`") && inner.includes("${")) {
+			return { kind: "unresolved", raw: value, reason: "dynamic-expression" };
+		}
+		if (inner === "") return { kind: "none" };
+		return { kind: "name", name: inner, via: "literal", key: null };
+	}
+
+	const mlCall = ML_CALL.exec(value);
+	if (mlCall?.[2]) {
+		return {
+			kind: "name",
+			name: ml.t(mlCall[2]),
+			via: "mlt",
+			key: mlCall[2],
+		};
+	}
+
+	if (IDENTIFIER.test(value)) return classifyIdentifier(value, ml, content);
+
+	return { kind: "unresolved", raw: value, reason: "dynamic-expression" };
+}
+
+/**
+ * 读 `const noteSettings = {...}` 的 `template` 字段。
+ *
+ * 只做语法级提取：块里有 `tp.file.selection()`、`parseInt(...)` 这类调用，
+ * 求值必炸；白名单四种形态之外一律报 unresolved。
+ */
+export function parseSelectorBinding(content: string, ml: Ml): BindingParse {
+	const block = findBracedBlock(content, "noteSettings");
+	if (!block) {
+		return { kind: "unresolved", raw: "", reason: "no-note-settings" };
+	}
+
+	const field = splitTopLevel(block.slice(1, -1))
+		.map((entry) => /^\s*["']?template["']?\s*:([\s\S]*)$/.exec(entry))
+		.find((match) => match !== null);
+	if (!field) {
+		return { kind: "unresolved", raw: "", reason: "no-template-field" };
+	}
+
+	return classifyValue(field[1] ?? "", ml, content);
+}
 
 export interface SwitcherRuleParse {
 	/** 数组里这条规则的源码原文 */

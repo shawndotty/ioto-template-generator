@@ -7,7 +7,9 @@ export type FolderStatus =
 	| "matched-missing" // 规则命中但模板缺失 -> 运行时回落默认
 	| "fallback" // 无规则命中 -> 默认模板
 	| "excluded" // 被 excludesPaths 排除，选择器里看不见
-	| "empty-match"; // 被 match:"" 抢占
+	| "empty-match" // 被 match:"" 抢占
+	| "direct" // 条目直连笔记模板，所有文件夹固定用它
+	| "no-template"; // 绑定为空，运行时会建空白笔记
 
 /** 逻辑名是按哪一级候选命中的。 */
 export type ResolveVia = "prefix" | "my" | "plain" | "direct";
@@ -73,7 +75,57 @@ export interface EntryGroup {
 	source: "loader" | "hotkey";
 	selector: FileRef;
 	folderSettings: FolderSettings;
+	/** 该条目自己解析出的绑定，不再继承分类级切换器 */
+	binding: SwitcherBinding;
 	folders: FolderRow[];
+}
+
+/** 选择器/切换器头注释里的声明。 */
+export interface SelectorHeader {
+	type: "selector" | "switcher" | null;
+	/** 已小写；未声明为 null */
+	for: string | null;
+}
+
+/** 条目绑定：地图能表达的全部运行时形态。 */
+export type SwitcherBinding =
+	| {
+			kind: "switcher";
+			/** 切换器文件（可能 file=null，此时 rules 为空） */
+			ref: FileRef;
+			rules: RuleRow[];
+			defaultTemplate: FileRef | null;
+			pathMode: boolean;
+			/** 切换器头部的 `for:`，用于与分类比对 */
+			forHint: string | null;
+			/** "target-missing" / "switchers-not-found" / ... */
+			parseError: string | null;
+	  }
+	| { kind: "direct-template"; ref: FileRef }
+	| { kind: "none" }
+	| { kind: "unresolved"; raw: string; reason: string };
+
+/** 同一分类内按绑定归并；规则表 / 可达数 / 反向索引都以它为单位。 */
+export interface BindingGroup {
+	/** sw:<path> / dt:<path> / none / unres:<raw> */
+	key: string;
+	kind: SwitcherBinding["kind"];
+	ref: FileRef | null;
+	rules: RuleRow[];
+	defaultTemplate: FileRef | null;
+	pathMode: boolean;
+	error: string | null;
+	forHint: string | null;
+}
+
+/** 未被任何入口挂载、或热键指向了不存在的文件的脚本。 */
+export interface UnmountedRow {
+	type: "selector" | "switcher" | "unknown";
+	name: string;
+	path: string;
+	file: TFile | null;
+	for: string | null;
+	reason: "no-hotkey" | "no-selector" | "hotkey-missing";
 }
 
 export interface TaskSlot {
@@ -93,9 +145,15 @@ export interface CategoryMap {
 	usage: Usage;
 	/** 可能多条（loader + 热键） */
 	entries: EntryGroup[];
+	/** 按条目绑定归并后的视图单位 */
+	bindingGroups: BindingGroup[];
+	/** 兼容字段：仅当分类只有一个切换器绑定时才有值 */
 	switcher: FileRef | null;
+	/** 兼容字段：同上 */
 	pathMode: boolean;
+	/** 兼容字段：同上 */
 	rules: RuleRow[];
+	/** 兼容字段：同上 */
 	defaultTemplate: FileRef | null;
 	taskSlots?: TaskSlot[];
 	taskBranches?: TaskBranch[];
@@ -115,12 +173,39 @@ export interface TemplateMapModel {
 	useUserTemplate: boolean;
 	categories: CategoryMap[];
 	reverseIndex: ReverseIndexRow[];
+	unmounted: UnmountedRow[];
 	orphans: {
-		missingTargets: { usage: Usage; ruleIndex: number; name: string }[];
+		missingTargets: {
+			usage: Usage;
+			/** null = 默认模板 / 绑定目标 */
+			ruleIndex: number | null;
+			name: string;
+			source: "rule" | "default" | "binding";
+		}[];
 		unreferencedTemplates: TFile[];
 	};
 	warnings: string[];
 }
 
-/** 分类卡片顺序固定，和运行时的四个入口一致。 */
-export const CATEGORY_ORDER: Usage[] = ["Input", "Output", "Outcome", "Task"];
+/** 默认四个入场的卡片顺序，和运行时的四个入口一致。 */
+export const DEFAULT_CATEGORY_ORDER: Usage[] = [
+	"Input",
+	"Output",
+	"Outcome",
+	"Task",
+];
+
+/** 兼容别名：保持既有调用点不变，实际含义是「默认四类」。 */
+export const CATEGORY_ORDER = DEFAULT_CATEGORY_ORDER;
+
+/** 选择器头 `** for:` 到分类的映射；`Custom` 由入口惰性带出。 */
+export const USAGE_BY_FOR: Record<string, Usage> = {
+	input: "Input",
+	output: "Output",
+	task: "Task",
+	outcome: "Outcome",
+	custom: "Custom",
+};
+
+/** 非默认分类的固定展示顺序。 */
+export const EXTRA_CATEGORY_ORDER: Usage[] = ["Custom"];

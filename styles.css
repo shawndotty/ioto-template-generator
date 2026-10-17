@@ -968,6 +968,20 @@
     color: var(--text-warning);
 }
 
+.ioto-template-map-status.is-direct {
+    color: var(--text-accent);
+}
+
+.ioto-template-map-status.is-no-template {
+    color: var(--text-faint);
+}
+
+.ioto-template-map-binding-raw {
+    font-family: var(--font-monospace);
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
 .ioto-template-map-excluded-by {
     font-size: 10px;
     color: var(--text-faint);

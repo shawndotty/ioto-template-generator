@@ -22,6 +22,8 @@ import {
 	ReverseIndexRow,
 	RuleRow,
 	TemplateMapModel,
+	UnmountedRow,
+	USAGE_BY_FOR,
 } from "../services/template-map/types";
 
 type TranslationKey = Parameters<typeof t>[0];
@@ -32,6 +34,20 @@ const STATUS_KEY: Record<FolderStatus, TranslationKey> = {
 	fallback: "MAP_STATUS_FALLBACK",
 	excluded: "MAP_STATUS_EXCLUDED",
 	"empty-match": "MAP_STATUS_EMPTY_MATCH",
+	direct: "MAP_STATUS_DIRECT",
+	"no-template": "MAP_STATUS_NO_TEMPLATE",
+};
+
+const UNMOUNTED_TYPE_KEY: Record<UnmountedRow["type"], TranslationKey> = {
+	selector: "MAP_UNMOUNTED_TYPE_SELECTOR",
+	switcher: "MAP_UNMOUNTED_TYPE_SWITCHER",
+	unknown: "MAP_UNMOUNTED_TYPE_UNKNOWN",
+};
+
+const UNMOUNTED_REASON_KEY: Record<UnmountedRow["reason"], TranslationKey> = {
+	"no-hotkey": "MAP_UNMOUNTED_REASON_NO_HOTKEY",
+	"no-selector": "MAP_UNMOUNTED_REASON_NO_SELECTOR",
+	"hotkey-missing": "MAP_UNMOUNTED_REASON_HOTKEY_MISSING",
 };
 
 /**
@@ -175,6 +191,7 @@ export class TemplateMapView extends ItemView {
 
 		this.renderReverseIndex(container, model.reverseIndex);
 		this.renderOrphans(container, model);
+		this.renderUnmounted(container, model.unmounted);
 	}
 
 	private renderHeader(
@@ -235,7 +252,8 @@ export class TemplateMapView extends ItemView {
 		const headText = head.createDiv({ cls: "ioto-template-map-card-title" });
 		headText.createSpan({
 			cls: "ioto-template-map-usage",
-			text: category.usage,
+			// 四类标题保持英文（避免顺带改版），Custom 用插件已有译名。
+			text: category.usage === "Custom" ? t("Custom") : category.usage,
 		});
 		headText.createSpan({
 			cls: "ioto-template-map-muted",
@@ -246,16 +264,18 @@ export class TemplateMapView extends ItemView {
 		headText.createSpan({
 			cls: "ioto-template-map-muted",
 			text: t("MAP_RULES_COUNT", {
-				count: String(category.rules.length),
+				count: String(
+					category.bindingGroups.reduce(
+						(sum, group) => sum + group.rules.length,
+						0,
+					),
+				),
 			}),
 		});
 		const switcherField = headText.createSpan({
 			cls: "ioto-template-map-muted",
 		});
-		switcherField.createSpan({
-			text: `${t("MAP_FIELD_SWITCHER")}: `,
-		});
-		this.renderSwitcherLink(switcherField, category.switcher);
+		this.renderCategoryBinding(switcherField, category, true);
 
 		const toggle = head.createEl("button", {
 			cls: "ioto-template-map-icon-btn",
@@ -308,8 +328,72 @@ export class TemplateMapView extends ItemView {
 			cls: "ioto-template-map-source-line",
 		});
 		sourceLine.createSpan({ text: t("MAP_SOURCE_LINE_PREFIX") });
-		this.renderSwitcherLink(sourceLine, category.switcher);
+		this.renderCategoryBinding(sourceLine, category, false);
 		sourceLine.createSpan({ text: t("MAP_SOURCE_LINE_SUFFIX") });
+	}
+
+	/** 分类级绑定摘要：唯一绑定给链接，多绑定给计数，无切换器给绑定形态。 */
+	private renderCategoryBinding(
+		container: HTMLElement,
+		category: CategoryMap,
+		includeLabel: boolean,
+	): void {
+		const groups = category.bindingGroups;
+		const switchers = groups.filter((group) => group.kind === "switcher");
+
+		if (groups.length === 0) {
+			container.createSpan({ text: t("MAP_TEMPLATE_NONE") });
+			return;
+		}
+
+		if (groups.length === 1) {
+			const group = groups[0];
+			if (!group) {
+				container.createSpan({ text: t("MAP_TEMPLATE_NONE") });
+				return;
+			}
+			if (group.kind === "switcher") {
+				if (includeLabel) {
+					container.createSpan({
+						text: `${t("MAP_FIELD_SWITCHER")}: `,
+					});
+				}
+				this.renderSwitcherLink(container, group.ref);
+				return;
+			}
+			if (includeLabel) {
+				container.createSpan({
+					text: `${t("MAP_FIELD_BINDING")}: `,
+				});
+			}
+			if (group.kind === "direct-template") {
+				container.createSpan({
+					text: `${t("MAP_BINDING_DIRECT")} · `,
+				});
+				this.renderFileLink(container, group.ref);
+				return;
+			}
+			container.createSpan({
+				text:
+					group.kind === "unresolved"
+						? t("MAP_BINDING_UNRESOLVED")
+						: t("MAP_BINDING_NONE"),
+			});
+			return;
+		}
+
+		if (switchers.length === 0) {
+			container.createSpan({ text: t("MAP_BINDING_NONE") });
+			return;
+		}
+		if (includeLabel) {
+			container.createSpan({ text: `${t("MAP_FIELD_SWITCHER")}: ` });
+		}
+		container.createSpan({
+			text: t("MAP_SWITCHER_COUNT", {
+				count: String(switchers.length),
+			}),
+		});
 	}
 
 	/** 切换器文件本身的链接；缺失时退化成红色删除线文本。 */
@@ -368,6 +452,8 @@ export class TemplateMapView extends ItemView {
 			text: this.viaLabel(entry.selector, model),
 		});
 
+		this.renderEntryBinding(meta, category, entry);
+
 		const base = meta.createSpan({ cls: "ioto-template-map-field" });
 		base.createSpan({
 			text: `${t("MAP_FIELD_BASE")}: ${entry.folderSettings.baseFolder || "—"}`,
@@ -405,7 +491,11 @@ export class TemplateMapView extends ItemView {
 				cls: "ioto-template-map-field",
 				text: `${t("MAP_FOLDERS_COUNT", {
 					count: String(entry.folders.length),
-				})} · ${t("MAP_FIELD_PATH_MODE")}: ${category.pathMode ? "on" : "off"}`,
+				})} · ${t("MAP_FIELD_PATH_MODE")}: ${
+					entry.binding.kind === "switcher" && entry.binding.pathMode
+						? "on"
+						: "off"
+				}`,
 			});
 		}
 
@@ -435,6 +525,27 @@ export class TemplateMapView extends ItemView {
 				: visible.slice(0, limit);
 
 		if (category.usage === "Task" || entry.folders.length === 0) {
+			return;
+		}
+
+		// 直连 / 空绑定没有规则可命中，不画规则表，只报一行口径。
+		if (entry.binding.kind !== "switcher") {
+			const line = block.createDiv({ cls: "ioto-template-map-muted" });
+			if (entry.binding.kind === "direct-template") {
+				line.createSpan({
+					text: `${t("MAP_BINDING_DIRECT")}: `,
+				});
+				this.renderFileLink(line, entry.binding.ref);
+				line.createSpan({
+					cls: "ioto-template-map-via",
+					text: t("MAP_DIRECT_FOLDERS", {
+						count: String(visible.length),
+					}),
+				});
+			} else {
+				line.setText(t("MAP_BINDING_NONE"));
+			}
+			this.renderExcludedDetails(block, model, excluded);
 			return;
 		}
 
@@ -470,22 +581,81 @@ export class TemplateMapView extends ItemView {
 			};
 		}
 
-		if (excluded.length > 0) {
-			const details = block.createEl("details", {
-				cls: "ioto-template-map-details",
-			});
-			details.createEl("summary", {
-				text: t("MAP_SECTION_EXCLUDED", {
-					count: String(excluded.length),
-				}),
-			});
-			const excludedTable = details.createDiv({
-				cls: "ioto-template-map-table",
-			});
-			for (const folder of excluded) {
-				this.renderFolderRow(excludedTable, model, folder);
-			}
+		this.renderExcludedDetails(block, model, excluded);
+	}
+
+	private renderExcludedDetails(
+		container: HTMLElement,
+		model: TemplateMapModel,
+		excluded: FolderRow[],
+	): void {
+		if (excluded.length === 0) return;
+		const details = container.createEl("details", {
+			cls: "ioto-template-map-details",
+		});
+		details.createEl("summary", {
+			text: t("MAP_SECTION_EXCLUDED", {
+				count: String(excluded.length),
+			}),
+		});
+		const excludedTable = details.createDiv({
+			cls: "ioto-template-map-table",
+		});
+		for (const folder of excluded) {
+			this.renderFolderRow(excludedTable, model, folder);
 		}
+	}
+
+	/** 条目自己的绑定：切换器 / 直连模板 / 空 / 无法静态解析。 */
+	private renderEntryBinding(
+		container: HTMLElement,
+		category: CategoryMap,
+		entry: EntryGroup,
+	): void {
+		const field = container.createSpan({ cls: "ioto-template-map-field" });
+		const binding = entry.binding;
+
+		if (binding.kind === "switcher") {
+			field.createSpan({ text: `${t("MAP_FIELD_SWITCHER")}: ` });
+			this.renderSwitcherLink(field, binding.ref);
+			if (binding.parseError === "target-missing") {
+				field.createSpan({
+					cls: "ioto-template-map-error",
+					text: t("MAP_ERROR_BINDING_MISSING", {
+						name: binding.ref.name,
+					}),
+				});
+			}
+			if (
+				binding.forHint &&
+				USAGE_BY_FOR[binding.forHint] !== category.usage
+			) {
+				field.createSpan({
+					cls: "ioto-template-map-context",
+					text: t("MAP_BINDING_FOR_MISMATCH", {
+						for: binding.forHint,
+					}),
+				});
+			}
+			return;
+		}
+
+		if (binding.kind === "direct-template") {
+			field.createSpan({ text: `${t("MAP_BINDING_DIRECT")}: ` });
+			this.renderFileLink(field, binding.ref);
+			return;
+		}
+
+		if (binding.kind === "none") {
+			field.createSpan({ text: t("MAP_BINDING_NONE") });
+			return;
+		}
+
+		field.createSpan({ text: `${t("MAP_BINDING_UNRESOLVED")}: ` });
+		field.createSpan({
+			cls: "ioto-template-map-binding-raw",
+			text: binding.raw || "—",
+		});
 	}
 
 	private renderFolderRow(
@@ -642,50 +812,65 @@ export class TemplateMapView extends ItemView {
 		container: HTMLElement,
 		category: CategoryMap,
 	): void {
-		if (category.rules.length === 0) return;
+		const groups = category.bindingGroups.filter(
+			(group) => group.kind === "switcher",
+		);
+		if (groups.length === 0) return;
 
-		const details = container.createEl("details", {
-			cls: "ioto-template-map-details",
-		});
-		details.createEl("summary", {
-			text: t("MAP_RULES_COUNT", {
-				count: String(category.rules.length),
-			}),
-		});
-
-		const wrapper = details.createDiv({ cls: "ioto-template-map-table-wrap" });
-		const table = wrapper.createEl("table", {
-			cls: "ioto-template-map-rule-table",
-		});
-		const head = table.createEl("thead").createEl("tr");
-		for (const label of [
-			"#",
-			"match",
-			t("MAP_RULE_COL_RAW"),
-			t("MAP_RULE_COL_NAME"),
-			t("MAP_RULE_COL_FILE"),
-			t("MAP_RULE_COL_REACH"),
-			t("MAP_RULE_COL_FLAGS"),
-		]) {
-			head.createEl("th", { text: label });
-		}
-
-		const body = table.createEl("tbody");
-		for (const rule of category.rules) {
-			const tr = body.createEl("tr");
-			tr.createEl("td", { text: String(rule.index) });
-			tr.createEl("td", {
-				text: rule.match === "" ? t("MAP_RULE_EMPTY_MATCH") : rule.match,
+		for (const group of groups) {
+			const details = container.createEl("details", {
+				cls: "ioto-template-map-details",
 			});
-			tr.createEl("td", {
-				cls: "ioto-template-map-raw",
-				text: rule.templateRaw || "—",
+			const summary = details.createEl("summary");
+			summary.createSpan({
+				text: t("MAP_RULES_COUNT", {
+					count: String(group.rules.length),
+				}),
 			});
-			tr.createEl("td", { text: rule.templateName || "—" });
-			const fileCell = tr.createEl("td");
-			this.renderFileLink(fileCell, rule.template);
-			tr.createEl("td", { text: String(rule.reachCount) });
-			tr.createEl("td", { text: this.ruleFlags(rule) });
+			if (groups.length > 1) {
+				summary.createSpan({ text: " · " });
+				this.renderSwitcherLink(summary, group.ref);
+			}
+
+			const wrapper = details.createDiv({
+				cls: "ioto-template-map-table-wrap",
+			});
+			const table = wrapper.createEl("table", {
+				cls: "ioto-template-map-rule-table",
+			});
+			const head = table.createEl("thead").createEl("tr");
+			for (const label of [
+				"#",
+				"match",
+				t("MAP_RULE_COL_RAW"),
+				t("MAP_RULE_COL_NAME"),
+				t("MAP_RULE_COL_FILE"),
+				t("MAP_RULE_COL_REACH"),
+				t("MAP_RULE_COL_FLAGS"),
+			]) {
+				head.createEl("th", { text: label });
+			}
+
+			const body = table.createEl("tbody");
+			for (const rule of group.rules) {
+				const tr = body.createEl("tr");
+				tr.createEl("td", { text: String(rule.index) });
+				tr.createEl("td", {
+					text:
+						rule.match === ""
+							? t("MAP_RULE_EMPTY_MATCH")
+							: rule.match,
+				});
+				tr.createEl("td", {
+					cls: "ioto-template-map-raw",
+					text: rule.templateRaw || "—",
+				});
+				tr.createEl("td", { text: rule.templateName || "—" });
+				const fileCell = tr.createEl("td");
+				this.renderFileLink(fileCell, rule.template);
+				tr.createEl("td", { text: String(rule.reachCount) });
+				tr.createEl("td", { text: this.ruleFlags(rule) });
+			}
 		}
 	}
 
@@ -764,7 +949,12 @@ export class TemplateMapView extends ItemView {
 			});
 			for (const target of model.orphans.missingTargets) {
 				const tr = table.createEl("tr");
-				tr.createEl("td", { text: `${target.usage}#${target.ruleIndex}` });
+				tr.createEl("td", {
+					text:
+						target.ruleIndex === null
+							? `${target.usage}*`
+							: `${target.usage}#${target.ruleIndex}`,
+				});
 				tr.createEl("td", {
 					cls: "ioto-template-map-missing",
 					text: target.name,
@@ -787,6 +977,62 @@ export class TemplateMapView extends ItemView {
 				});
 				item.onclick = () => this.openFile(file.path);
 			}
+		}
+	}
+
+	/** 未挂载清单：只展示，默认收起，主链不把它当可达。 */
+	private renderUnmounted(
+		container: HTMLElement,
+		rows: UnmountedRow[],
+	): void {
+		if (rows.length === 0) return;
+
+		const card = container.createDiv({ cls: "ioto-template-map-card" });
+		const details = card.createEl("details", {
+			cls: "ioto-template-map-details",
+		});
+		details.createEl("summary", {
+			text: t("MAP_SECTION_UNMOUNTED", { count: String(rows.length) }),
+		});
+
+		const table = details.createEl("table", {
+			cls: "ioto-template-map-simple-table",
+		});
+		const head = table.createEl("tr");
+		for (const label of ["MAP_COL_TYPE", "MAP_COL_NAME", "for", "MAP_COL_STATUS"]) {
+			head.createEl("th", {
+				text:
+					label === "for"
+						? "for"
+						: t(label as TranslationKey),
+			});
+		}
+
+		for (const row of rows) {
+			const tr = table.createEl("tr");
+			tr.createEl("td", { text: t(UNMOUNTED_TYPE_KEY[row.type]) });
+			const nameCell = tr.createEl("td");
+			if (row.file) {
+				const link = nameCell.createSpan({
+					cls: "ioto-template-map-link",
+					text: row.name,
+				});
+				link.title = row.path;
+				link.onclick = () => this.openFile(row.path);
+			} else {
+				nameCell.createSpan({
+					cls: "ioto-template-map-muted",
+					text: row.name,
+				});
+			}
+			tr.createEl("td", { text: row.for ?? "—" });
+			tr.createEl("td", {
+				cls:
+					row.reason === "hotkey-missing"
+						? "ioto-template-map-missing"
+						: "ioto-template-map-muted",
+				text: t(UNMOUNTED_REASON_KEY[row.reason]),
+			});
 		}
 	}
 

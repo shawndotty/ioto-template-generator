@@ -30,9 +30,8 @@ const { extractMlDicts, createMl, normalizeLocale } = await jiti.import(
 	'../src/services/template-map/multilang.ts',
 );
 
-const { parseSwitcherRules, parseFolderSettings } = await jiti.import(
-	'../src/services/template-map/parser.ts',
-);
+const { parseSwitcherRules, parseFolderSettings, parseHeader, parseSelectorBinding } =
+	await jiti.import('../src/services/template-map/parser.ts');
 
 const fixture = (group, name) =>
 	readFile(
@@ -76,6 +75,7 @@ const mlMap = {
 	Clips: '碎片笔记',
 	Articles: '文章',
 	Reports: '报告',
+	IOTODefaultCustomNoteTemplate: 'TP-自定义-笔记-默认模板',
 };
 const ml = { t: (key) => mlMap[key] ?? key };
 
@@ -334,4 +334,140 @@ test('normalizeLocale：运行时语言到三语桶', () => {
 	assert.equal(normalizeLocale('zh-Hant'), 'zh-tw');
 	assert.equal(normalizeLocale('fr'), 'en');
 	assert.equal(normalizeLocale(''), 'en');
+});
+
+// —— 21-30. 头注释与条目绑定（Plan-20261018-055232 §7） ——
+
+const inlineSelector = (template, extra = '') =>
+	[
+		'<%*',
+		'/*',
+		'** type: selector',
+		'** for: input',
+		'*/',
+		extra,
+		'const noteSettings = {',
+		`\ttemplate: ${template},`,
+		'\taddLinkToTDL: false,',
+		'}',
+		'_%>',
+	].join('\n');
+
+test('parseHeader：自定义选择器是 selector / custom', async () => {
+	const content = await fixture(
+		'selectors',
+		'JL-TP-选择器-创建自定义-其他.md',
+	);
+	assert.deepEqual(parseHeader(content), {
+		type: 'selector',
+		for: 'custom',
+	});
+});
+
+test('parseHeader：大小写与空格容错，for 一律小写', () => {
+	assert.deepEqual(parseHeader('/** Type: Selector */\n/** for :  Input */'), {
+		type: 'selector',
+		for: 'input',
+	});
+	assert.deepEqual(parseHeader('/** type: switcher */'), {
+		type: 'switcher',
+		for: null,
+	});
+	assert.deepEqual(parseHeader('no header'), { type: null, for: null });
+});
+
+test('parseSelectorBinding：自定义选择器是字面量切换器名', async () => {
+	const content = await fixture(
+		'selectors',
+		'JL-TP-选择器-创建自定义-其他.md',
+	);
+	assert.deepEqual(parseSelectorBinding(content, ml), {
+		kind: 'name',
+		name: 'JL-TP-自定义-切换器-其他',
+		via: 'literal',
+		key: null,
+	});
+});
+
+test('parseSelectorBinding：默认选择器跟随标识符拿到 ml.t 键', async () => {
+	const content = await fixture('selectors', 'My-TP-选择器-创建输入.md');
+	const parsed = parseSelectorBinding(content, ml);
+
+	assert.equal(parsed.kind, 'name');
+	assert.equal(parsed.via, 'identifier-mlt');
+	assert.equal(parsed.key, 'IOTODefaultInputSwitcherTemplate');
+	assert.equal(parsed.name, ml.t('IOTODefaultInputSwitcherTemplate'));
+});
+
+test('parseSelectorBinding：碎片笔记是字面量笔记模板', async () => {
+	const content = await fixture(
+		'selectors',
+		'JL-TP-选择器-创建输入-碎片笔记.md',
+	);
+	assert.deepEqual(parseSelectorBinding(content, ml), {
+		kind: 'name',
+		name: 'My-TP-输入-碎片笔记',
+		via: 'literal',
+		key: null,
+	});
+});
+
+test('parseSelectorBinding：空串表示不绑定模板', () => {
+	assert.deepEqual(
+		parseSelectorBinding(inlineSelector('""'), ml),
+		{ kind: 'none' },
+	);
+	assert.deepEqual(
+		parseSelectorBinding(
+			inlineSelector('switcherTemplate', 'const switcherTemplate = "";'),
+			ml,
+		),
+		{ kind: 'none' },
+	);
+});
+
+test('parseSelectorBinding：未声明的标识符保留原文并报 unknown-identifier', () => {
+	const parsed = parseSelectorBinding(inlineSelector('someVar'), ml);
+	assert.equal(parsed.kind, 'unresolved');
+	assert.equal(parsed.reason, 'unknown-identifier');
+	assert.equal(parsed.raw, 'someVar');
+});
+
+test('parseSelectorBinding：动态表达式不做求值，原文照显', () => {
+	const parsed = parseSelectorBinding(inlineSelector('tp.file.title'), ml);
+	assert.equal(parsed.kind, 'unresolved');
+	assert.equal(parsed.reason, 'dynamic-expression');
+	assert.equal(parsed.raw, 'tp.file.title');
+
+	const tmpl = parseSelectorBinding(inlineSelector('`a${b}`'), ml);
+	assert.equal(tmpl.kind, 'unresolved');
+	assert.equal(tmpl.reason, 'dynamic-expression');
+});
+
+test('parseSelectorBinding：缺字段与缺块给两种不同 reason', () => {
+	const noField = parseSelectorBinding(
+		'const noteSettings = {\n\tother: 1,\n}',
+		ml,
+	);
+	assert.equal(noField.kind, 'unresolved');
+	assert.equal(noField.reason, 'no-template-field');
+
+	const noBlock = parseSelectorBinding('const x = 1', ml);
+	assert.equal(noBlock.kind, 'unresolved');
+	assert.equal(noBlock.reason, 'no-note-settings');
+});
+
+test('parseSwitcherRules：自定义切换器 1 条人物规则，兜底走 Custom 键', async () => {
+	const content = await fixture(
+		'switchers',
+		'JL-TP-自定义-切换器-其他.md',
+	);
+	const parsed = parseSwitcherRules(content, ml);
+
+	assert.equal(parsed.error, null);
+	assert.equal(parsed.pathMode, false);
+	assert.equal(parsed.rules.length, 1);
+	assert.equal(parsed.rules[0].match, '人物');
+	assert.equal(parsed.rules[0].templateName, 'JL-TP-自定义-人物');
+	assert.equal(parsed.defaultTemplateName, 'TP-自定义-笔记-默认模板');
 });
