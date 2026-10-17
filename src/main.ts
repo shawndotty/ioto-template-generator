@@ -43,6 +43,16 @@ export default class IOTOTemplateGenerator extends Plugin {
 				},
 			);
 
+			// 命令入口：与功能区单击走同一条 activateView 路径
+			this.addCommand({
+				id: "open-generator",
+				name: t("COMMAND_OPEN_GENERATOR"),
+				icon: "package",
+				callback: () => {
+					void this.activateView();
+				},
+			});
+
 			// This adds a settings tab so the user can configure various aspects of the plugin
 			this.addSettingTab(new SettingTab(this.app, this));
 		} catch (error) {
