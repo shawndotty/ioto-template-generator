@@ -22,7 +22,7 @@ import { ImportModal } from "../modals/ImportModal";
 import { ScriptPreviewModal } from "../modals/ScriptPreviewModal";
 import { ObjectEditModal } from "../modals/ObjectEditModal";
 import { ArrayEditModal } from "../modals/ArrayEditModal";
-import { ScriptEngine } from "../processors/ScriptEngine";
+import { ScriptEngine, ParseFailure } from "../processors/ScriptEngine";
 import { FolderPickerModal } from "../ui/pickers/folder-picker";
 import { FilePickerModal } from "../ui/pickers/file-picker";
 import { PresetLoadModal } from "../modals/PresetLoadModal";
@@ -852,9 +852,25 @@ export class GeneratorView extends ItemView {
 		const applyResult = (result: {
 			usage?: Usage;
 			type?: TemplateType;
-			folderSettings?: Record<string, any>;
-			noteSettings?: Record<string, any>;
+			folderSettings?: Record<string, any> | null;
+			noteSettings?: Record<string, any> | null;
+			failure?: ParseFailure | null;
 		}) => {
+			if (result.failure) {
+				// 失败时完全不动表单：半份配置比空配置更难排查
+				console.error(
+					"IOTO Template Generator: import failed",
+					file.path,
+					result.failure,
+				);
+				new Notice(
+					t("GENERATOR_VIEW_NOTICE_IMPORT_FAILED", {
+						file: file.basename,
+						reason: this.describeImportFailure(result.failure),
+					}),
+				);
+				return;
+			}
 			if (result.usage && result.type) {
 				this.type = result.type;
 				this.usage = result.usage;
@@ -885,12 +901,16 @@ export class GeneratorView extends ItemView {
 
 		switch (this.type) {
 			case "Selector":
-				const result = ScriptEngine.parseSelector(content);
+				const result = ScriptEngine.parseSelector(
+					content,
+					this.buildImportStubs(),
+				);
 				applyResult({
 					usage: result.usage ?? undefined,
 					type: result.type ?? undefined,
 					folderSettings: result.folderSettings,
 					noteSettings: result.noteSettings,
+					failure: result.failure,
 				});
 				break;
 			case "Switcher":
@@ -903,6 +923,44 @@ export class GeneratorView extends ItemView {
 				break;
 			default:
 				break;
+		}
+	}
+
+	/** 导入时的求值桩：ioto-settings 的全部设置 + 选择器脚本里的局部量。 */
+	private buildImportStubs(): Record<string, unknown> {
+		const settings: Record<string, unknown> =
+			this.app.plugins.plugins["ioto-settings"]?.settings ?? {};
+		return {
+			...settings,
+			switcherTemplate: "",
+			selectedText: "",
+			activeFileBaseName: "",
+			currentFolderPath: "",
+			isInTaskFolder: false,
+			onlyUseDateType: true,
+			tR: "",
+			ml: { t: (key: string) => key },
+			tp: {
+				file: { selection: () => "", folder: () => "", title: "" },
+				config: { active_file: { basename: "" } },
+				user: {},
+			},
+			app: {},
+		};
+	}
+
+	private describeImportFailure(failure: ParseFailure): string {
+		switch (failure.code) {
+			case "missing-identifier":
+				return t("GENERATOR_VIEW_IMPORT_REASON_MISSING_VARIABLE", {
+					name: failure.detail ?? "",
+				});
+			case "missing-folder-settings":
+				return t("GENERATOR_VIEW_IMPORT_REASON_NO_FOLDER");
+			case "unbalanced":
+				return t("GENERATOR_VIEW_IMPORT_REASON_UNBALANCED");
+			default:
+				return t("GENERATOR_VIEW_IMPORT_REASON_EVAL");
 		}
 	}
 

@@ -8,13 +8,47 @@ import {
 
 import { SWITCHERS_TEMPLATE_OPTIONS } from "../models/constantsSwitcher";
 
+export type ParseFailureCode =
+	| "missing-identifier"
+	| "eval-error"
+	| "unbalanced"
+	| "missing-folder-settings";
+
+export interface ParseFailure {
+	code: ParseFailureCode;
+	detail?: string;
+}
+
+export interface SelectorParseResult {
+	usage: Usage | null;
+	type: TemplateType | null;
+	folderSettings: Record<string, any> | null;
+	noteSettings: Record<string, any> | null;
+	failure: ParseFailure | null;
+}
+
+interface BlockResult {
+	found: boolean;
+	value: Record<string, any> | null;
+	raw: string | null;
+	failure: ParseFailure | null;
+}
+
+class MissingIdentifierError extends Error {
+	readonly identifier: string;
+
+	constructor(identifier: string) {
+		super(`Missing identifier: ${identifier}`);
+		this.name = "MissingIdentifierError";
+		this.identifier = identifier;
+	}
+}
+
 export class ScriptEngine {
-	static parseSelector(content: string): {
-		usage: Usage | null;
-		type: TemplateType | null;
-		folderSettings: Record<string, any>;
-		noteSettings: Record<string, any>;
-	} {
+	static parseSelector(
+		content: string,
+		stubs: Record<string, unknown> = {},
+	): SelectorParseResult {
 		let usage: Usage | null = null;
 		let type: TemplateType | null = null;
 
@@ -36,22 +70,76 @@ export class ScriptEngine {
 			return {
 				usage: null,
 				type: null,
-				folderSettings: {},
-				noteSettings: {},
+				folderSettings: null,
+				noteSettings: null,
+				failure: null,
 			};
 		}
 
-		const folderSettings = this.parseSettingsObject(
+		// Any failure yields no partial configuration: the caller can only apply
+		// the whole result or leave the form untouched.
+		const folderResult = this.parseSettingsObject(
 			content,
 			"folderSettings",
+			stubs,
+			true,
 		);
-		const noteSettings = this.parseSettingsObject(content, "noteSettings");
+		if (!folderResult.found) {
+			return this.failed({ code: "missing-folder-settings" });
+		}
+		if (folderResult.failure || !folderResult.value) {
+			return this.failed(folderResult.failure);
+		}
+
+		// Not every selector carries note settings.
+		const noteResult = this.parseSettingsObject(
+			content,
+			"noteSettings",
+			stubs,
+			true,
+		);
+		const noteSettings = noteResult.found ? noteResult.value : {};
+		if (noteResult.failure || !noteSettings) {
+			return this.failed(noteResult.failure);
+		}
+
+		this.restoreSourceExpressions(
+			folderResult.value,
+			folderResult.raw ?? "",
+			usage,
+			"Folder",
+		);
+		if (noteResult.raw) {
+			this.restoreSourceExpressions(
+				noteSettings,
+				noteResult.raw,
+				usage,
+				"Note",
+			);
+		}
+
+		const switcherTemplateLiteral =
+			this.detectSwitcherTemplateLiteral(content);
+		if (switcherTemplateLiteral !== null) {
+			noteSettings.template = switcherTemplateLiteral;
+		}
 
 		return {
 			usage,
 			type,
-			folderSettings,
+			folderSettings: folderResult.value,
 			noteSettings,
+			failure: null,
+		};
+	}
+
+	private static failed(failure: ParseFailure | null): SelectorParseResult {
+		return {
+			usage: null,
+			type: null,
+			folderSettings: null,
+			noteSettings: null,
+			failure: failure ?? { code: "eval-error" },
 		};
 	}
 
@@ -85,10 +173,14 @@ export class ScriptEngine {
 			};
 		}
 
-		const sharedFrontMatters = this.parseSettingsObject(
+		// Lenient on purpose: this task only changes the selector evaluation.
+		const frontMatterResult = this.parseSettingsObject(
 			content,
 			"frontMatter",
+			{},
+			false,
 		);
+		const sharedFrontMatters = frontMatterResult.value ?? {};
 
 		// 如果 sharedFrontMatters 中存在 Project 属性，把它删掉
 		if (
@@ -636,26 +728,222 @@ tR += util.noteFrontMatterCooker(frontMatter, includedNote);`;
 	private static parseSettingsObject(
 		content: string,
 		varName: string,
-	): Record<string, any> {
-		let settings: Record<string, any> = {};
+		stubs: Record<string, unknown>,
+		strict: boolean,
+	): BlockResult {
 		const regex = new RegExp(`const\\s+${varName}\\s*=\\s*\\{`, "m");
 		const match = content.match(regex);
-		if (!match || match.index === undefined) return settings;
+		if (!match || match.index === undefined) {
+			return { found: false, value: null, raw: null, failure: null };
+		}
 		const startObj = match.index + match[0].length - 1;
 		const endObj = this.findMatchingBracket(content, startObj);
-		if (endObj === -1) return settings;
+		if (endObj === -1) {
+			return {
+				found: true,
+				value: null,
+				raw: null,
+				failure: { code: "unbalanced" },
+			};
+		}
 		const raw = content.substring(startObj, endObj + 1);
-		const sanitized = raw.replace(/`([\s\S]*?)`/g, (_, p1) => {
+		// Template literals are flattened before evaluation so that `${...}`
+		// survives as literal text (the form stores templates, not values).
+		const sanitized = this.flattenTemplateLiterals(raw);
+		try {
+			// The body must stay in sloppy mode: `with` is a SyntaxError in strict
+			// mode. Adding "use strict" here would make every import fail; the
+			// missing-identifier unit test guards that.
+			const fn = new Function(
+				"__scope",
+				`with(__scope){ return ${sanitized}; }`,
+			);
+			const obj = fn(this.createStubScope(stubs, strict));
+			if (obj && typeof obj === "object") {
+				return {
+					found: true,
+					value: obj as Record<string, any>,
+					raw,
+					failure: null,
+				};
+			}
+			return {
+				found: true,
+				value: null,
+				raw,
+				failure: { code: "eval-error", detail: "not an object" },
+			};
+		} catch (error) {
+			if (error instanceof MissingIdentifierError) {
+				return {
+					found: true,
+					value: null,
+					raw,
+					failure: {
+						code: "missing-identifier",
+						detail: error.identifier,
+					},
+				};
+			}
+			return {
+				found: true,
+				value: null,
+				raw,
+				failure: {
+					code: "eval-error",
+					detail: error instanceof Error ? error.message : String(error),
+				},
+			};
+		}
+	}
+
+	private static flattenTemplateLiterals(raw: string): string {
+		return raw.replace(/`([\s\S]*?)`/g, (_, p1: string) => {
 			const escaped = p1.replace(/"/g, '\\"').replace(/\n/g, "\\n");
 			return `"${escaped}"`;
 		});
-		try {
-			const obj = new Function("return " + sanitized)();
-			if (obj && typeof obj === "object") {
-				settings = obj as Record<string, any>;
+	}
+
+	private static createStubScope(
+		stubs: Record<string, unknown>,
+		strict: boolean,
+	): Record<string, unknown> {
+		return new Proxy(stubs, {
+			// Every identifier resolves through the scope so that a branch like
+			// `inputSelectorExcludesPaths ? ... : []` sees the real stub value.
+			has: () => true,
+			get: (target, key) => {
+				// `with` reads Symbol.unscopables; never throw for symbols.
+				if (typeof key === "symbol") return undefined;
+				if (key in target) return target[key];
+				if (key in globalThis) {
+					return (globalThis as Record<string, unknown>)[key];
+				}
+				if (strict) throw new MissingIdentifierError(key);
+				return undefined;
+			},
+		});
+	}
+
+	/**
+	 * Turns non-literal string fields back into `${原始表达式}`.
+	 *
+	 * `generateSelector` wraps any value containing "${" in backticks, and the
+	 * form defaults are templates such as "${inputFolder}". Writing the resolved
+	 * value instead would freeze the script to the current settings.
+	 */
+	private static restoreSourceExpressions(
+		settings: Record<string, any>,
+		rawObject: string,
+		usage: Usage,
+		level: "Folder" | "Note",
+	): void {
+		const entries = this.splitTopLevelEntries(rawObject);
+		TEMPLATE_OPTIONS.filter(
+			(option) =>
+				option.type === "Selector" &&
+				option.for === usage &&
+				option.level === level,
+		).forEach((option) => {
+			if (!["string", "file", "path"].includes(option.valueType)) return;
+			const entry = entries.find((item) => item.key === option.name);
+			if (!entry || this.isPlainLiteral(entry.rawValue)) return;
+			if (typeof settings[option.name] !== "string") return;
+			settings[option.name] = `\${${entry.rawValue}}`;
+		});
+	}
+
+	private static isPlainLiteral(value: string): boolean {
+		const v = value.trim();
+		return (
+			/^"(?:\\.|[^"\\])*"$/.test(v) ||
+			/^'(?:\\.|[^'\\])*'$/.test(v) ||
+			/^`[\s\S]*`$/.test(v) ||
+			/^-?\d+(?:\.\d+)?$/.test(v) ||
+			/^(true|false|null|undefined)$/.test(v)
+		);
+	}
+
+	private static detectSwitcherTemplateLiteral(content: string): string | null {
+		const match = content.match(
+			/const\s+switcherTemplate\s*=\s*"([^"]*)"\s*;/,
+		);
+		return match ? match[1] ?? "" : null;
+	}
+
+	/** Splits a flat object literal into `key` / raw value pairs. */
+	private static splitTopLevelEntries(
+		rawObject: string,
+	): { key: string; rawValue: string }[] {
+		const entries: { key: string; rawValue: string }[] = [];
+		const start = rawObject.indexOf("{");
+		const end = rawObject.lastIndexOf("}");
+		if (start === -1 || end <= start) return entries;
+
+		const pushEntry = (text: string) => {
+			const entry = text.trim();
+			if (!entry) return;
+			const colon = this.findTopLevelColon(entry);
+			if (colon === -1) return;
+			const key = entry
+				.slice(0, colon)
+				.trim()
+				.replace(/^["']|["']$/g, "");
+			entries.push({ key, rawValue: entry.slice(colon + 1).trim() });
+		};
+
+		let depth = 0;
+		let current = "";
+		let quote: string | null = null;
+		for (let i = start + 1; i < end; i++) {
+			const ch = rawObject[i];
+			if (quote) {
+				current += ch;
+				if (ch === "\\" && i + 1 < end) {
+					current += rawObject[i + 1];
+					i++;
+				} else if (ch === quote) {
+					quote = null;
+				}
+				continue;
 			}
-		} catch {}
-		return settings;
+			if (ch === '"' || ch === "'" || ch === "`") {
+				quote = ch;
+				current += ch;
+				continue;
+			}
+			if (ch === "{" || ch === "[" || ch === "(") depth++;
+			else if (ch === "}" || ch === "]" || ch === ")") depth--;
+			if (ch === "," && depth === 0) {
+				pushEntry(current);
+				current = "";
+				continue;
+			}
+			current += ch;
+		}
+		pushEntry(current);
+		return entries;
+	}
+
+	private static findTopLevelColon(entry: string): number {
+		let depth = 0;
+		let quote: string | null = null;
+		for (let i = 0; i < entry.length; i++) {
+			const ch = entry[i];
+			if (quote) {
+				if (ch === "\\") i++;
+				else if (ch === quote) quote = null;
+				continue;
+			}
+			if (ch === '"' || ch === "'" || ch === "`") {
+				quote = ch;
+				continue;
+			}
+			if (ch === "{" || ch === "[" || ch === "(") depth++;
+			else if (ch === "}" || ch === "]" || ch === ")") depth--;
+			else if (ch === ":" && depth === 0) return i;
+		}
+		return -1;
 	}
 
 	private static parseSettingsArray(

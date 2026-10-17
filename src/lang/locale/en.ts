@@ -269,6 +269,15 @@ export default {
 	GENERATOR_VIEW_GROUP_EXTRACT: `Extract`,
 	GENERATOR_VIEW_GROUP_OTHER: `Others`,
 	GENERATOR_VIEW_NOTICE_IMPORTED: "Settings have been imported from ${file}",
+	GENERATOR_VIEW_NOTICE_IMPORT_FAILED:
+		"Could not import settings from ${file}: ${reason}",
+	GENERATOR_VIEW_IMPORT_REASON_MISSING_VARIABLE: "unknown variable ${name}",
+	GENERATOR_VIEW_IMPORT_REASON_NO_FOLDER:
+		"no folderSettings block found",
+	GENERATOR_VIEW_IMPORT_REASON_UNBALANCED:
+		"the settings block is not closed",
+	GENERATOR_VIEW_IMPORT_REASON_EVAL:
+		"the settings block could not be evaluated",
 	GENERATOR_VIEW_NOTICE_LOAD_FAILED:
 		"Failed to load default template: ${error}",
 	GENERATOR_VIEW_NOTICE_NO_DEFAULT: `No default template has been configured for this platform.`,
