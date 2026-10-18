@@ -26,3 +26,5 @@ ioto-template-generator.zip
 # release credentials
 .env
 .gitee-token
+
+notes.md
