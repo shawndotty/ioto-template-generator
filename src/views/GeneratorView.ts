@@ -29,6 +29,10 @@ import { PresetLoadModal } from "../modals/PresetLoadModal";
 import { PresetSaveModal } from "../modals/PresetSaveModal";
 import IOTOTemplateGeneratorPlugin from "../main";
 import { t } from "../lang/helpers";
+import {
+	pickSwitcherRow,
+	SwitcherTarget,
+} from "../services/template-map/target";
 
 export class GeneratorView extends ItemView {
 	app: App;
@@ -42,6 +46,10 @@ export class GeneratorView extends ItemView {
 	plugin: IOTOTemplateGeneratorPlugin;
 	platformListCollapsed = false;
 	rightPanelCollapsed = false;
+
+	/** 表单最近一次「与文件同步」时的快照；null = 无基线（空表单/手点页签）。 */
+	private loadedBaseline: string | null = null;
+	private targetTimer: number | null = null;
 
 	// UI Elements
 	middleContainer: HTMLElement;
@@ -104,6 +112,7 @@ export class GeneratorView extends ItemView {
 			this.importedFile = null;
 			this.folderSettings = {};
 			this.noteSettings = {};
+			this.clearBaseline();
 
 			leftCol
 				.findAll(".usage-item")
@@ -497,6 +506,8 @@ export class GeneratorView extends ItemView {
 		section: string,
 	) {
 		const s = new Setting(container).setName(opt.title || opt.name);
+		// 地图的「定位到该设置项」依赖这个稳定锚点（opt.name 即配置键名）
+		s.settingEl.dataset.iotoTgSetting = opt.name;
 		s.nameEl.addEventListener("click", () => {
 			this.activeOption = opt;
 			this.renderRightColumn();
@@ -537,6 +548,10 @@ export class GeneratorView extends ItemView {
 					const row = listContainer.createDiv({
 						cls: "switcher-array-row",
 					});
+					// 地图定位契约：序号与地图 `#n` 同口径（1 起），模板存原文
+					row.dataset.iotoTgRule = String(index + 1);
+					row.dataset.iotoTgTemplate = item?.template ?? "";
+					row.dataset.iotoTgSetting = opt.name;
 					row.style.display = "flex";
 					row.style.alignItems = "center";
 					row.style.gap = "10px";
@@ -852,8 +867,31 @@ export class GeneratorView extends ItemView {
 		]).open();
 	}
 
-	async importTemplate(file: TFile, expectedType?: TemplateType) {
-		const content = await this.app.vault.read(file);
+	/** 成功载入返回 true；任何失败都已在内部弹过 Notice。 */
+	async importTemplate(
+		file: TFile,
+		expectedType?: TemplateType,
+	): Promise<boolean> {
+		let content: string;
+		try {
+			content = await this.app.vault.read(file);
+		} catch (error) {
+			// 切换器可能刚被删除/改名，地图手里的 TFile 是旧快照
+			console.error(
+				"IOTO Template Generator: read failed",
+				file.path,
+				error,
+			);
+			new Notice(
+				t("MAP_EDIT_READ_FAILED", {
+					file: file.basename,
+					error: String(error),
+				}),
+			);
+			return false;
+		}
+
+		let ok = false;
 
 		// 提取公共逻辑
 		const applyResult = (result: {
@@ -903,6 +941,10 @@ export class GeneratorView extends ItemView {
 						el.toggleClass("is-active", isMatch);
 					});
 				this.renderMiddleColumn();
+				// 基线必须在渲染后取：renderSwitcherOption 会把非数组的
+				// switchers 就地补成 []，渲染前取会立刻假报脏。
+				this.loadedBaseline = this.snapshotConfig();
+				ok = true;
 			} else {
 				new Notice(t("GENERATOR_VIEW_NOTICE_NO_PLATFORM"));
 			}
@@ -935,6 +977,8 @@ export class GeneratorView extends ItemView {
 			default:
 				break;
 		}
+
+		return ok;
 	}
 
 	/** 导入时的求值桩：ioto-settings 的全部设置 + 选择器脚本里的局部量。 */
@@ -975,6 +1019,95 @@ export class GeneratorView extends ItemView {
 		}
 	}
 
+	/** 表单的可比较快照；只覆盖「会被写回文件」的四块。 */
+	private snapshotConfig(): string {
+		return JSON.stringify({
+			usage: this.usage,
+			type: this.type,
+			folderSettings: this.folderSettings,
+			noteSettings: this.noteSettings,
+		});
+	}
+
+	hasUnsavedChanges(): boolean {
+		return (
+			this.loadedBaseline !== null &&
+			this.loadedBaseline !== this.snapshotConfig()
+		);
+	}
+
+	clearBaseline(): void {
+		this.loadedBaseline = null;
+	}
+
+	/** 表单重建后按目标行滚动 + 短暂高亮；找不到就整块回退。 */
+	focusSwitcherTarget(target: SwitcherTarget): void {
+		// 放在 rAF 里：block: "center" 需要布局完成，leaf 刚 reveal 时首帧可能没有几何。
+		window.requestAnimationFrame(() => {
+			const rows = Array.from(
+				this.middleContainer.querySelectorAll<HTMLElement>(
+					".switcher-array-row",
+				),
+			);
+			let el: HTMLElement | null = null;
+
+			if (target.ruleIndex === null) {
+				el = this.middleContainer.querySelector(
+					'[data-ioto-tg-setting="defaultTemplate"]',
+				);
+			} else {
+				const picked = pickSwitcherRow(
+					rows.map((row) => ({
+						index: Number(row.dataset.iotoTgRule ?? 0),
+						template: row.dataset.iotoTgTemplate ?? "",
+					})),
+					target,
+				);
+				if (picked) {
+					el = this.middleContainer.querySelector(
+						`.switcher-array-row[data-ioto-tg-rule="${picked.index}"]`,
+					);
+				}
+			}
+
+			if (el) {
+				el.scrollIntoView({ block: "center", inline: "nearest" });
+				this.flashTarget([el]);
+				return;
+			}
+
+			// 整块回退：Setting 头 + 全部规则行（或 defaultTemplate 那一格）
+			const block =
+				target.ruleIndex === null
+					? Array.from(
+							this.middleContainer.querySelectorAll<HTMLElement>(
+								'[data-ioto-tg-setting="defaultTemplate"]',
+							),
+						)
+					: Array.from(
+							this.middleContainer.querySelectorAll<HTMLElement>(
+								'[data-ioto-tg-setting="switchers"]',
+							),
+						);
+			block[0]?.scrollIntoView({ block: "center", inline: "nearest" });
+			this.flashTarget(block);
+			new Notice(
+				t("MAP_EDIT_NOT_FOUND", {
+					rule: String(target.ruleIndex ?? 0),
+				}),
+			);
+		});
+	}
+
+	private flashTarget(els: HTMLElement[]): void {
+		if (this.targetTimer !== null) window.clearTimeout(this.targetTimer);
+		els.forEach((el) => el.addClass("is-ioto-tg-target"));
+		this.targetTimer = window.setTimeout(() => {
+			els.forEach((el) => el.removeClass("is-ioto-tg-target"));
+			this.targetTimer = null;
+		}, 1500);
+	}
+
 	generateScript() {
 		let template = "";
 		switch (this.type) {
@@ -1003,6 +1136,7 @@ export class GeneratorView extends ItemView {
 			this.importedFile,
 			this.folderSettings,
 			this.noteSettings,
+			() => (this.loadedBaseline = this.snapshotConfig()),
 		).open();
 	}
 
@@ -1058,6 +1192,7 @@ export class GeneratorView extends ItemView {
 			});
 
 		this.renderMiddleColumn();
+		this.loadedBaseline = this.snapshotConfig();
 		this.activeOption = null;
 		this.renderRightColumn();
 	}

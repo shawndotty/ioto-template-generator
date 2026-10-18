@@ -909,7 +909,11 @@
 
 .ioto-template-map-row {
     display: grid;
-    grid-template-columns: minmax(200px, 1.6fr) minmax(120px, 0.9fr) minmax(200px, 1.4fr);
+    grid-template-columns:
+        minmax(200px, 1.6fr)
+        minmax(120px, 0.9fr)
+        minmax(200px, 1.4fr)
+        max-content;
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
@@ -945,7 +949,8 @@
         grid-template-columns:
             minmax(0, 1.25fr)
             minmax(0, 0.7fr)
-            minmax(0, 1.05fr);
+            minmax(0, 1.05fr)
+            24px;
         gap: 6px;
         padding: 6px 8px;
     }
@@ -955,6 +960,10 @@
     .ioto-template-map-row {
         grid-template-columns: 1fr;
         gap: 2px;
+    }
+
+    .ioto-template-map-row .ioto-template-map-cell.is-edit {
+        justify-content: flex-end; /* 图标掉到模板下面时右对齐，否则像漏排 */
     }
 
     .ioto-template-map-row.is-head {
@@ -993,6 +1002,56 @@
     white-space: normal;
     flex-wrap: wrap;
     overflow: visible;
+}
+
+/* 第 4 列：快捷入口，不跟「文件夹 ↔ 模板」抢视线。 */
+.ioto-template-map-cell.is-edit {
+    justify-content: flex-end;
+    overflow: visible; /* 覆盖 .ioto-template-map-cell 的 hidden，避免裁掉 outline */
+}
+
+.ioto-template-map-edit-btn {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 2px;
+    height: auto;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: color 120ms ease;
+}
+
+.ioto-template-map-row:hover .ioto-template-map-edit-btn {
+    color: var(--text-accent);
+}
+
+.ioto-template-map-edit-btn:hover {
+    background: var(--background-modifier-hover);
+    border-radius: 4px;
+}
+
+.ioto-template-map-edit-btn.is-disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+/* 定位高亮：1.5s 后由 JS 摘类，这里只负责淡出。 */
+@keyframes ioto-tg-target-pulse {
+    0% {
+        box-shadow: 0 0 0 2px var(--text-accent);
+        background: color-mix(in srgb, var(--text-accent) 16%, transparent);
+    }
+    100% {
+        box-shadow: 0 0 0 2px transparent;
+        background: transparent;
+    }
+}
+
+.is-ioto-tg-target {
+    border-radius: 6px;
+    animation: ioto-tg-target-pulse 1.5s ease-out;
 }
 
 .ioto-template-map-status {

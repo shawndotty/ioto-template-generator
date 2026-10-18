@@ -5,6 +5,7 @@ import {
 	Modal,
 	Notice,
 	Plugin,
+	TFile,
 	WorkspaceLeaf,
 } from "obsidian";
 import {
@@ -17,6 +18,8 @@ import { GeneratorView } from "views/GeneratorView";
 import { TemplateMapView } from "views/TemplateMapView";
 import { t } from "./lang/helpers";
 import { IotoSettingsService } from "services/ioto-settings-services";
+import { ConfirmModal } from "./modals/ConfirmModal";
+import { SwitcherTarget } from "./services/template-map/target";
 
 // Remember to rename these classes and interfaces!
 
@@ -83,26 +86,65 @@ export default class IOTOTemplateGenerator extends Plugin {
 
 	onunload() {}
 
-	async activateView(openInNewWindow = false) {
-		await this.revealOrCreate(GENERATOR_VIEW_TYPE, openInNewWindow);
+	async activateView(openInNewWindow = false): Promise<GeneratorView | null> {
+		const leaf = await this.revealOrCreate(
+			GENERATOR_VIEW_TYPE,
+			openInNewWindow,
+		);
+		return leaf?.view instanceof GeneratorView ? leaf.view : null;
 	}
 
 	async activateMapView(openInNewWindow = false) {
 		await this.revealOrCreate(MAP_VIEW_TYPE, openInNewWindow);
 	}
 
+	/**
+	 * 模板地图的编辑图标入口：复用已有生成器 leaf，载入切换器并定位到目标行。
+	 * 全程不写 vault（保存仍由用户在生成器里点）。
+	 */
+	async openSwitcherEditor(file: TFile, target: SwitcherTarget): Promise<void> {
+		if (!file) return;
+
+		const view = await this.activateView();
+		if (!view) {
+			new Notice(t("MAP_EDIT_OPEN_FAILED"));
+			return;
+		}
+
+		if (view.hasUnsavedChanges()) {
+			const proceed = await this.confirmOverwrite(file);
+			if (!proceed) return;
+		}
+
+		const ok = await view.importTemplate(file, "Switcher");
+		if (!ok) return; // importTemplate 已弹过失败原因
+
+		view.focusSwitcherTarget(target);
+	}
+
+	private confirmOverwrite(file: TFile): Promise<boolean> {
+		return new Promise((resolve) => {
+			new ConfirmModal(
+				this.app,
+				t("MAP_EDIT_DIRTY_TITLE"),
+				t("MAP_EDIT_DIRTY_MESSAGE", { file: file.basename }),
+				resolve,
+			).open();
+		});
+	}
+
 	/** 找已有 leaf -> 没有就新建 -> reveal；两个视图入口共用。 */
 	private async revealOrCreate(
 		type: string,
 		openInNewWindow = false,
-	): Promise<void> {
+	): Promise<WorkspaceLeaf | null> {
 		const { workspace } = this.app;
 
 		if (openInNewWindow) {
 			const leaf = workspace.getLeaf("window");
 			await leaf.setViewState({ type, active: true });
 			workspace.revealLeaf(leaf);
-			return;
+			return leaf;
 		}
 
 		let leaf: WorkspaceLeaf | null =
@@ -116,6 +158,7 @@ export default class IOTOTemplateGenerator extends Plugin {
 
 		// "Reveal" the leaf in case it is in a collapsed sidebar
 		workspace.revealLeaf(leaf);
+		return leaf;
 	}
 
 	async loadSettings() {

@@ -36,6 +36,8 @@ export class ScriptPreviewModal extends Modal {
 	private hotkey?: HotkeyEntry | null;
 	private isRecordingHotkey = false;
 	private hotkeyBtn: ButtonComponent;
+	/** 覆盖保存成功后的回调：调用方用它刷新「脏检查」基线。 */
+	private onSaved?: () => void;
 
 	constructor(
 		app: App,
@@ -46,6 +48,7 @@ export class ScriptPreviewModal extends Modal {
 		importedFile: TFile | null,
 		folderSettings: Record<string, any>,
 		noteSettings?: Record<string, any>,
+		onSaved?: () => void,
 	) {
 		super(app);
 		this.script = script;
@@ -53,6 +56,7 @@ export class ScriptPreviewModal extends Modal {
 		this.type = type;
 		this.importedFile = importedFile;
 		this.settings = settings;
+		this.onSaved = onSaved;
 		this.prefix =
 			this.app.plugins.plugins["ioto-settings"].settings
 				.userTemplatePrefix || "";
@@ -196,6 +200,7 @@ export class ScriptPreviewModal extends Modal {
 									this.importedFile.path,
 								),
 							);
+							this.onSaved?.();
 						} else {
 							await this.app.vault.create(
 								this.targetFilePath,

@@ -3,6 +3,7 @@ import {
 	ItemView,
 	Notice,
 	TAbstractFile,
+	TFile,
 	TFolder,
 	WorkspaceLeaf,
 	debounce,
@@ -30,6 +31,12 @@ import {
 } from "../services/template-map/types";
 
 type TranslationKey = Parameters<typeof t>[0];
+
+/** 行级编辑目标：切换器文件 + 该行所属规则（默认模板行为 null）。 */
+type EditTarget = {
+	switcherFile: TFile | null;
+	rule: RuleRow | null;
+};
 
 const STATUS_KEY: Record<FolderStatus, TranslationKey> = {
 	matched: "MAP_STATUS_MATCHED",
@@ -645,9 +652,25 @@ export class TemplateMapView extends ItemView {
 			cls: "ioto-template-map-cell",
 			text: t("MAP_COL_TEMPLATE"),
 		});
+		headRow.createDiv({
+			cls: "ioto-template-map-cell is-edit",
+			text: t("MAP_COL_EDIT"),
+		});
+
+		// 规则序号 -> 规则行：模板原文要用来做生成器侧的定位主键
+		const ruleByIndex = new Map(
+			entry.binding.rules.map((rule) => [rule.index, rule]),
+		);
+		const switcherFile = entry.binding.ref.file;
 
 		for (const folder of shown) {
-			this.renderFolderRow(table, model, folder);
+			this.renderFolderRow(table, model, folder, {
+				switcherFile,
+				rule:
+					folder.ruleIndex === null
+						? null
+						: (ruleByIndex.get(folder.ruleIndex) ?? null),
+			});
 		}
 
 		if (!isExpanded && visible.length > limit) {
@@ -888,6 +911,7 @@ export class TemplateMapView extends ItemView {
 		container: HTMLElement,
 		model: TemplateMapModel,
 		folder: FolderRow,
+		edit?: EditTarget,
 	): void {
 		const row = container.createDiv({ cls: "ioto-template-map-row" });
 
@@ -929,6 +953,52 @@ export class TemplateMapView extends ItemView {
 			cls: "ioto-template-map-cell is-template",
 		});
 		this.renderEffectiveTemplate(templateCell, model, folder);
+
+		if (edit) this.renderEditCell(row, folder, edit);
+	}
+
+	/** 第 4 列：铅笔 = 在生成器里打开该切换器并定位到本行。 */
+	private renderEditCell(
+		row: HTMLElement,
+		folder: FolderRow,
+		edit: EditTarget,
+	): void {
+		const cell = row.createDiv({ cls: "ioto-template-map-cell is-edit" });
+		// excluded / direct / no-template 在四张表里实际不出现，留空保持网格对齐
+		if (folder.status === "excluded") return;
+
+		if (!edit.switcherFile) {
+			const dead = cell.createSpan({
+				cls: "ioto-template-map-edit-btn is-disabled",
+			});
+			setIcon(dead, "pencil");
+			dead.title = t("MAP_EDIT_DISABLED");
+			return; // 用 span 而非 disabled button：禁用按钮的 title 在部分平台不弹
+		}
+
+		const file = edit.switcherFile;
+		const isDefault = folder.status === "fallback";
+		const btn = cell.createEl("button", {
+			cls: "ioto-template-map-edit-btn",
+		});
+		setIcon(btn, "pencil");
+		btn.title = isDefault
+			? t("MAP_EDIT_TOOLTIP_FALLBACK", { file: file.basename })
+			: t("MAP_EDIT_TOOLTIP", {
+					file: file.basename,
+					rule: String(folder.ruleIndex ?? 0),
+				});
+		btn.onclick = (event: MouseEvent) => {
+			event.stopPropagation();
+			// 不调 this.render()：地图的 scrollTop 由 render() 存取，
+			// 这里重建一次就会把「返回地图」变成回到顶部。
+			void this.plugin.openSwitcherEditor(file, {
+				ruleIndex: isDefault ? null : folder.ruleIndex,
+				template: isDefault
+					? null
+					: (edit.rule?.templateRaw ?? null),
+			});
+		};
 	}
 
 	private renderEffectiveTemplate(
