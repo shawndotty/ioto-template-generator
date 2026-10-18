@@ -902,6 +902,14 @@
 }
 
 .ioto-template-map-table {
+    /* 轨道只在这里定义一次；行靠 subgrid 共享，表头与正文才不会各算一套列宽。 */
+    --ioto-tm-cols:
+        minmax(200px, 1.6fr)
+        minmax(120px, 0.9fr)
+        minmax(200px, 1.4fr)
+        max-content;
+    display: grid;
+    grid-template-columns: var(--ioto-tm-cols);
     border: 1px solid var(--background-modifier-border);
     border-radius: 8px;
     overflow: hidden;
@@ -909,11 +917,8 @@
 
 .ioto-template-map-row {
     display: grid;
-    grid-template-columns:
-        minmax(200px, 1.6fr)
-        minmax(120px, 0.9fr)
-        minmax(200px, 1.4fr)
-        max-content;
+    grid-column: 1 / -1; /* 横跨父栅格的全部轨道 */
+    grid-template-columns: subgrid; /* 共享父栅格的轨道尺寸 */
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
@@ -945,20 +950,26 @@
 
 /* 窄栏（分屏/侧边）下三列放不下：先压缩列宽，再窄到放不下就退成一列。 */
 @container (max-width: 520px) {
-    .ioto-template-map-row {
-        grid-template-columns:
+    .ioto-template-map-table {
+        --ioto-tm-cols:
             minmax(0, 1.25fr)
             minmax(0, 0.7fr)
             minmax(0, 1.05fr)
             24px;
+    }
+
+    .ioto-template-map-row {
         gap: 6px;
         padding: 6px 8px;
     }
 }
 
 @container (max-width: 340px) {
+    .ioto-template-map-table {
+        --ioto-tm-cols: 1fr;
+    }
+
     .ioto-template-map-row {
-        grid-template-columns: 1fr;
         gap: 2px;
     }
 
@@ -968,6 +979,18 @@
 
     .ioto-template-map-row.is-head {
         display: none;
+    }
+}
+
+/* 老内核（Obsidian < 1.5.3 / Chromium < 117）没有 subgrid：退回逐行栅格，避免单列堆叠。 */
+@supports not (grid-template-columns: subgrid) {
+    .ioto-template-map-table {
+        display: block;
+    }
+
+    .ioto-template-map-row {
+        grid-column: auto;
+        grid-template-columns: var(--ioto-tm-cols); /* 变量从表格继承，断点自动生效 */
     }
 }
 
@@ -1291,8 +1314,11 @@ button.ioto-template-map-entry-summary:hover {
         gap: 4px;
     }
 
+    .ioto-template-map-table {
+        --ioto-tm-cols: 1fr;
+    }
+
     .ioto-template-map-row {
-        grid-template-columns: 1fr;
         gap: 2px;
     }
 

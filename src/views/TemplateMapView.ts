@@ -920,7 +920,8 @@ export class TemplateMapView extends ItemView {
 			cls: "ioto-template-map-folder",
 			text: folder.name,
 		});
-		name.style.paddingLeft = `${folder.depth * 14}px`;
+		// 类别根的直接子目录当作视觉第一层，与表头同基线；更深层才继续缩进。
+		name.style.paddingLeft = `${Math.max(0, folder.depth - 1) * 14}px`;
 		name.onclick = () => this.revealFolder(folder.path);
 		// 命中是默认态，只有「不一样」的状态才值得占一个徽章位。
 		if (folder.status !== "matched") {
