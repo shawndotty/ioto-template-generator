@@ -22,3 +22,7 @@ data.json
 .DS_Store
 
 ioto-template-generator.zip
+
+# release credentials
+.env
+.gitee-token
