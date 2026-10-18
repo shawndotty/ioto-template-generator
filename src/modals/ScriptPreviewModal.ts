@@ -18,6 +18,9 @@ import { IOTOTemplateGeneratorSettings } from "../settings";
 import { GENERATOR_VIEW_TYPE } from "../models/constants";
 import { TemplaterServices } from "../services/templater-services";
 import { HotkeyService, HotkeyEntry } from "../services/hotkey-services";
+import { createEmptySwitcherContent } from "../processors/switcherTemplate";
+// 仅类型断言用：运行时 import 会与 GeneratorView 形成循环依赖
+import type { GeneratorView } from "../views/GeneratorView";
 
 export class ScriptPreviewModal extends Modal {
 	private script: string;
@@ -280,7 +283,9 @@ export class ScriptPreviewModal extends Modal {
 							const filePath = switcherFolderPath
 								? `${switcherFolderPath}/${fileName}`
 								: fileName;
-							const content = `<%*\n/*\n** type: switcher\n** for: ${this.usage}\n*/\n_%>\n\n<%*\n\nconst frontMatter = {};\n\nconst switchers = [];\n\n_%>`;
+							const content = createEmptySwitcherContent(
+								this.usage,
+							);
 
 							try {
 								const newFile = await this.app.vault.create(
@@ -300,12 +305,19 @@ export class ScriptPreviewModal extends Modal {
 										GENERATOR_VIEW_TYPE,
 									)?.[0];
 								if (leaf) {
-									const view = leaf.view as any;
+									// 只做类型断言，不产生运行时依赖
+									const view =
+										leaf.view as unknown as GeneratorView;
 									if (
 										typeof view?.importTemplate ===
 										"function"
 									) {
-										view.importTemplate(newFile);
+										// 视图此刻通常还停在 Selector 页：必须声明这是切换器，
+										// 否则会被 parseSelector 判成缺 folderSettings 而整份失败
+										await view.importTemplate(
+											newFile,
+											"Switcher",
+										);
 									}
 								}
 							} catch (error) {

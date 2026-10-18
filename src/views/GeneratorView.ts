@@ -852,9 +852,8 @@ export class GeneratorView extends ItemView {
 		]).open();
 	}
 
-	async importTemplate(file: TFile) {
+	async importTemplate(file: TFile, expectedType?: TemplateType) {
 		const content = await this.app.vault.read(file);
-		this.importedFile = file;
 
 		// 提取公共逻辑
 		const applyResult = (result: {
@@ -880,6 +879,8 @@ export class GeneratorView extends ItemView {
 				return;
 			}
 			if (result.usage && result.type) {
+				// 只有整份配置可用时才认领，避免失败后「生成」误覆盖刚创建的切换器
+				this.importedFile = file;
 				this.type = result.type;
 				this.usage = result.usage;
 				this.folderSettings = result.folderSettings || {};
@@ -907,7 +908,9 @@ export class GeneratorView extends ItemView {
 			}
 		};
 
-		switch (this.type) {
+		// 自动导入的新文件由调用方声明类型；手动导入不传，
+		// 仍按当前页签解析，跨类型导入继续显式失败（V262 有意设计）
+		switch (expectedType ?? this.type) {
 			case "Selector":
 				const result = ScriptEngine.parseSelector(
 					content,
