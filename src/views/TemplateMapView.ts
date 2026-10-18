@@ -38,6 +38,16 @@ type EditTarget = {
 	rule: RuleRow | null;
 };
 
+/** 条目级：切换器 + 规则索引表；本行规则由 renderFolderRow 按 ruleIndex 查。 */
+type EditSource = {
+	switcherFile: TFile | null;
+	ruleByIndex: Map<number, RuleRow>;
+};
+
+/** 地图的两种呈现：详情版（全量信息）/ 极简版（只看文件夹与模板）。 */
+type MapMode = "detail" | "minimal";
+const DEFAULT_MAP_MODE: MapMode = "minimal";
+
 const STATUS_KEY: Record<FolderStatus, TranslationKey> = {
 	matched: "MAP_STATUS_MATCHED",
 	"matched-missing": "MAP_STATUS_MATCHED_MISSING",
@@ -75,6 +85,11 @@ export class TemplateMapView extends ItemView {
 	private footnoteState = new Map<string, boolean>();
 	/** 成果范围按成果根存放：不同根各自独立。只在视图实例内，关视图即回默认。 */
 	private outcomeScopes = new Map<string, OutcomeScope>();
+	private mode: MapMode = DEFAULT_MAP_MODE;
+	/** 上一次 build 的结果：Tab 切换只重画 body，不重扫 vault。 */
+	private model: TemplateMapModel | null = null;
+	/** body 容器：header 只在 render() 里建一次。 */
+	private bodyEl: HTMLElement | null = null;
 
 	constructor(
 		leaf: WorkspaceLeaf,
@@ -101,6 +116,35 @@ export class TemplateMapView extends ItemView {
 
 	getIcon(): string {
 		return "map";
+	}
+
+	getState(): Record<string, unknown> {
+		return { mode: this.mode };
+	}
+
+	async setState(state: unknown): Promise<void> {
+		const mode = (state as { mode?: string } | null)?.mode;
+		if (mode !== "detail" && mode !== "minimal") return;
+		if (mode === this.mode) return;
+		this.mode = mode;
+		// setState 可能在 onOpen 之后被工作区调用：已有 body 就立刻重画。
+		if (this.bodyEl) {
+			this.syncModeButtons();
+			this.renderBody(true);
+		}
+	}
+
+	/** header 只建一次，模式变化后要把分段控件的选中态跟上。 */
+	private syncModeButtons(): void {
+		for (const el of Array.from(
+			this.contentEl.querySelectorAll<HTMLElement>(
+				".ioto-template-map-mode-btn",
+			),
+		)) {
+			const active = el.dataset.mode === this.mode;
+			el.toggleClass("is-active", active);
+			el.setAttribute("aria-selected", String(active));
+		}
 	}
 
 	async onOpen(): Promise<void> {
@@ -157,7 +201,7 @@ export class TemplateMapView extends ItemView {
 		if (this.loading) return;
 		this.loading = true;
 
-		// 两次 empty() 都会把滚动位置打回顶部，必须在它们之前取值。
+		// empty() 会把滚动位置打回顶部，必须在它们之前取值。
 		const scrollTop = this.contentEl.scrollTop;
 		const container = this.contentEl;
 		container.empty();
@@ -167,10 +211,16 @@ export class TemplateMapView extends ItemView {
 			const model = await this.builder.build({
 				outcomeScopes: this.outcomeScopes,
 			});
+			this.model = model;
 			container.empty();
-			this.renderModel(container, model);
-			container.scrollTop = scrollTop;
+			this.renderHeader(container, model);
+			this.bodyEl = container.createDiv({
+				cls: "ioto-template-map-body",
+			});
+			this.renderBody(false, scrollTop);
 		} catch (error) {
+			this.model = null;
+			this.bodyEl = null;
 			container.empty();
 			const card = container.createDiv({
 				cls: "ioto-template-map-card ioto-template-map-error",
@@ -183,27 +233,47 @@ export class TemplateMapView extends ItemView {
 		}
 	}
 
-	private renderModel(container: HTMLElement, model: TemplateMapModel): void {
-		this.renderHeader(container, model);
+	/** 只重画 body：模式切换 / 折叠展开都走这里，不重扫 vault。 */
+	private renderBody(
+		resetScroll = false,
+		restoreScrollTop?: number,
+	): void {
+		const model = this.model;
+		const body = this.bodyEl;
+		if (!model || !body) return;
+
+		const scrollTop = restoreScrollTop ?? this.contentEl.scrollTop;
+		body.empty();
 
 		if (model.warnings.includes("no-ioto-settings")) {
-			container.createDiv({
+			body.createDiv({
 				cls: "ioto-template-map-card ioto-template-map-error",
 				text: t("MAP_ERROR_NO_SETTINGS"),
 			});
+			this.contentEl.scrollTop = resetScroll ? 0 : scrollTop;
 			return;
 		}
 
-		this.renderWarnings(container, model);
+		this.renderWarnings(body, model);
 
 		if (model.categories.length === 0) {
-			container.createDiv({
+			body.createDiv({
 				cls: "ioto-template-map-card ioto-template-map-empty",
 				text: t("MAP_EMPTY_STATE"),
 			});
-			return;
+		} else if (this.mode === "minimal") {
+			this.renderMinimal(body, model);
+		} else {
+			this.renderDetail(body, model);
 		}
 
+		this.contentEl.scrollTop = resetScroll ? 0 : scrollTop;
+	}
+
+	private renderDetail(
+		container: HTMLElement,
+		model: TemplateMapModel,
+	): void {
 		for (const category of model.categories) {
 			this.renderCategory(container, model, category);
 		}
@@ -211,6 +281,200 @@ export class TemplateMapView extends ItemView {
 		this.renderReverseIndex(container, model);
 		this.renderOrphans(container, model);
 		this.renderUnmounted(container, model.unmounted);
+	}
+
+	/** 极简版：只留四类文件夹与模板的对应表，异常的可见性不降级。 */
+	private renderMinimal(
+		container: HTMLElement,
+		model: TemplateMapModel,
+	): void {
+		const categories = model.categories.filter(
+			(category) => category.usage !== "Task",
+		);
+		if (categories.length === 0) {
+			container.createDiv({
+				cls: "ioto-template-map-card ioto-template-map-empty",
+				text: t("MAP_EMPTY_STATE"),
+			});
+			return;
+		}
+		for (const category of categories) {
+			this.renderMinimalCategory(container, model, category);
+		}
+	}
+
+	/** 多入口时优先「切换器且有文件夹」，保证主入口一定有行。 */
+	private primaryEntry(category: CategoryMap): EntryGroup | null {
+		const entries = category.entries;
+		return (
+			entries.find(
+				(entry) =>
+					entry.binding.kind === "switcher" &&
+					entry.folders.length > 0,
+			) ??
+			entries.find((entry) => entry.folders.length > 0) ??
+			entries[0] ??
+			null
+		);
+	}
+
+	private renderMinimalCategory(
+		container: HTMLElement,
+		model: TemplateMapModel,
+		category: CategoryMap,
+	): void {
+		const card = container.createDiv({ cls: "ioto-template-map-card" });
+		const head = card.createDiv({ cls: "ioto-template-map-card-head" });
+
+		const headText = head.createDiv({ cls: "ioto-template-map-card-title" });
+		headText.createSpan({
+			cls: "ioto-template-map-usage",
+			text: category.usage === "Custom" ? t("Custom") : category.usage,
+		});
+
+		const tools = head.createDiv({ cls: "ioto-template-map-card-tools" });
+		if (category.usage === "Outcome") {
+			const scopes = this.outcomeScopesOf(category);
+			for (const info of scopes) {
+				if (scopes.length > 1) {
+					tools.createSpan({
+						cls: "ioto-template-map-muted",
+						text: info.root.split("/").pop() ?? info.root,
+					});
+				}
+				this.renderScopeSelect(tools, info);
+			}
+		}
+
+		// 折叠态也要答得出当前范围，所以下拉在折叠判断之前建。
+		const toggle = tools.createEl("button", {
+			cls: "ioto-template-map-icon-btn",
+		});
+		setIcon(
+			toggle,
+			this.collapsed.has(category.usage)
+				? "chevron-right"
+				: "chevron-down",
+		);
+		toggle.onclick = () => {
+			if (this.collapsed.has(category.usage)) {
+				this.collapsed.delete(category.usage);
+			} else {
+				this.collapsed.add(category.usage);
+			}
+			this.renderBody();
+		};
+
+		if (this.collapsed.has(category.usage)) return;
+
+		const body = card.createDiv({ cls: "ioto-template-map-card-body" });
+
+		if (category.error === "switcher-missing") {
+			body.createDiv({
+				cls: "ioto-template-map-error",
+				text: t("MAP_ERROR_SWITCHER_MISSING", {
+					name: category.switcher?.name ?? "",
+				}),
+			});
+			return;
+		}
+
+		const entry = this.primaryEntry(category);
+		if (!entry) {
+			body.createDiv({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_NO_ENTRIES"),
+			});
+			return;
+		}
+
+		if (entry.folders.length === 0) {
+			body.createDiv({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_NO_ENTRIES"),
+			});
+			return;
+		}
+
+		if (category.entries.length > 1) {
+			body.createDiv({
+				cls: "ioto-template-map-muted",
+				text: t("MAP_MINIMAL_MULTI_ENTRY", {
+					count: String(category.entries.length),
+				}),
+			});
+		}
+
+		// 异常照常直出；「for 不一致」这类 warn 也不藏。
+		for (const issue of this.entryIssues(entry, category)) {
+			body.createDiv({
+				cls: `ioto-template-map-issue${issue.error ? "" : " is-warn"}`,
+				text: issue.text,
+			});
+		}
+
+		if (entry.folderSettings.error) return;
+
+		if (entry.binding.kind === "unresolved") {
+			const line = body.createDiv({ cls: "ioto-template-map-muted" });
+			line.createSpan({ text: `${t("MAP_BINDING_UNRESOLVED")}: ` });
+			line.createSpan({
+				cls: "ioto-template-map-binding-raw",
+				text: entry.binding.raw || "—",
+			});
+			return;
+		}
+
+		const table = body.createDiv({
+			cls: "ioto-template-map-table is-minimal",
+		});
+		const headRow = table.createDiv({
+			cls: "ioto-template-map-row is-head",
+		});
+		headRow.createDiv({
+			cls: "ioto-template-map-cell",
+			text: t("MAP_COL_FOLDER"),
+		});
+		headRow.createDiv({
+			cls: "ioto-template-map-cell",
+			text: t("MAP_COL_TEMPLATE"),
+		});
+		headRow.createDiv({
+			cls: "ioto-template-map-cell is-edit",
+			text: t("MAP_COL_EDIT"),
+		});
+
+		const visible = entry.folders.filter(
+			(folder) => folder.status !== "excluded",
+		);
+		const key = `${category.usage}:${category.entries.indexOf(entry)}`;
+		const isExpanded = this.expanded.has(key);
+		const limit =
+			entry.folderSettings.outcomeScope?.applied === "all" ? 50 : 20;
+		const shown =
+			isExpanded || visible.length <= limit
+				? visible
+				: visible.slice(0, limit);
+
+		const source = this.editSourceOf(entry);
+		for (const folder of shown) {
+			this.renderFolderRow(table, model, folder, source, {
+				showRule: false,
+			});
+		}
+
+		if (!isExpanded && visible.length > limit) {
+			const more = body.createEl("button", {
+				cls: "ioto-template-map-more",
+				text: t("MAP_EXPAND_ALL", {
+					count: String(visible.length),
+				}),
+			});
+			more.onclick = () => {
+				this.expanded.add(key);
+				this.renderBody();
+			};
+		}
 	}
 
 	private renderHeader(
@@ -238,7 +502,39 @@ export class TemplateMapView extends ItemView {
 			text: t("MAP_GENERATED_AT", { time: this.formatTime(model.generatedAt) }),
 		});
 
-		const refresh = header.createEl("button", {
+		const actions = header.createDiv({
+			cls: "ioto-template-map-header-actions",
+		});
+		const modes = actions.createDiv({ cls: "ioto-template-map-modes" });
+		modes.setAttribute("role", "tablist");
+		modes.setAttribute("aria-label", t("MAP_VIEW_TITLE"));
+
+		const makeModeBtn = (mode: MapMode, label: string, hint: string) => {
+			const btn = modes.createEl("button", {
+				cls: "ioto-template-map-mode-btn",
+				text: label,
+			});
+			btn.setAttribute("role", "tab");
+			btn.dataset.mode = mode;
+			btn.title = hint;
+			this.syncModeButtons(); // 建好一个就同步一次，新按钮不会停在 false
+			btn.onclick = () => {
+				if (this.mode === mode) return;
+				this.mode = mode;
+				this.syncModeButtons();
+				this.renderBody(true); // 换了一套内容：滚动归零，且不重扫
+			};
+			return btn;
+		};
+
+		makeModeBtn("detail", t("MAP_MODE_DETAIL"), t("MAP_MODE_DETAIL_HINT"));
+		makeModeBtn(
+			"minimal",
+			t("MAP_MODE_MINIMAL"),
+			t("MAP_MODE_MINIMAL_HINT"),
+		);
+
+		const refresh = actions.createEl("button", {
 			cls: "ioto-template-map-refresh",
 		});
 		setIcon(refresh, "refresh-cw");
@@ -337,7 +633,7 @@ export class TemplateMapView extends ItemView {
 			} else {
 				this.collapsed.add(category.usage);
 			}
-			void this.render();
+			this.renderBody();
 		};
 
 		if (this.collapsed.has(category.usage)) return;
@@ -658,19 +954,10 @@ export class TemplateMapView extends ItemView {
 		});
 
 		// 规则序号 -> 规则行：模板原文要用来做生成器侧的定位主键
-		const ruleByIndex = new Map(
-			entry.binding.rules.map((rule) => [rule.index, rule]),
-		);
-		const switcherFile = entry.binding.ref.file;
+		const source = this.editSourceOf(entry);
 
 		for (const folder of shown) {
-			this.renderFolderRow(table, model, folder, {
-				switcherFile,
-				rule:
-					folder.ruleIndex === null
-						? null
-						: (ruleByIndex.get(folder.ruleIndex) ?? null),
-			});
+			this.renderFolderRow(table, model, folder, source);
 		}
 
 		if (!isExpanded && visible.length > limit) {
@@ -680,7 +967,7 @@ export class TemplateMapView extends ItemView {
 			});
 			more.onclick = () => {
 				this.expanded.add(key);
-				void this.render();
+				this.renderBody();
 			};
 		}
 
@@ -906,12 +1193,26 @@ export class TemplateMapView extends ItemView {
 		}
 	}
 
+	/** 条目级编辑源：切换器 + 规则索引表，详情版与极简版共用。 */
+	private editSourceOf(entry: EntryGroup): EditSource {
+		if (entry.binding.kind !== "switcher") {
+			return { switcherFile: null, ruleByIndex: new Map() };
+		}
+		return {
+			switcherFile: entry.binding.ref.file,
+			ruleByIndex: new Map(
+				entry.binding.rules.map((rule) => [rule.index, rule]),
+			),
+		};
+	}
+
 	/** 条目自己的绑定：切换器 / 直连模板 / 空 / 无法静态解析。 */
 	private renderFolderRow(
 		container: HTMLElement,
 		model: TemplateMapModel,
 		folder: FolderRow,
-		edit?: EditTarget,
+		source?: EditSource,
+		opts?: { showRule?: boolean },
 	): void {
 		const row = container.createDiv({ cls: "ioto-template-map-row" });
 
@@ -937,25 +1238,37 @@ export class TemplateMapView extends ItemView {
 			});
 		}
 
-		const ruleCell = row.createDiv({
-			cls: "ioto-template-map-cell ioto-template-map-muted is-rule",
-		});
-		if (folder.ruleIndex !== null) {
-			const match =
-				folder.match === null || folder.match === ""
-					? t("MAP_RULE_EMPTY_MATCH")
-					: folder.match;
-			ruleCell.setText(`#${folder.ruleIndex} · ${match}`);
-		} else {
-			ruleCell.setText("—");
+		// 极简版没有规则列：不建这一格，否则 subgrid 会多出一列空位。
+		if (opts?.showRule !== false) {
+			const ruleCell = row.createDiv({
+				cls: "ioto-template-map-cell ioto-template-map-muted is-rule",
+			});
+			if (folder.ruleIndex !== null) {
+				const match =
+					folder.match === null || folder.match === ""
+						? t("MAP_RULE_EMPTY_MATCH")
+						: folder.match;
+				ruleCell.setText(`#${folder.ruleIndex} · ${match}`);
+			} else {
+				ruleCell.setText("—");
+			}
 		}
 
 		const templateCell = row.createDiv({
 			cls: "ioto-template-map-cell is-template",
 		});
-		this.renderEffectiveTemplate(templateCell, model, folder);
+		this.renderEffectiveTemplate(templateCell, model, folder, {
+			hideVia: opts?.showRule === false,
+		});
 
-		if (edit) this.renderEditCell(row, folder, edit);
+		if (!source) return;
+		this.renderEditCell(row, folder, {
+			switcherFile: source.switcherFile,
+			rule:
+				folder.ruleIndex === null
+					? null
+					: (source.ruleByIndex.get(folder.ruleIndex) ?? null),
+		});
 	}
 
 	/** 第 4 列：铅笔 = 在生成器里打开该切换器并定位到本行。 */
@@ -1006,6 +1319,7 @@ export class TemplateMapView extends ItemView {
 		container: HTMLElement,
 		model: TemplateMapModel,
 		folder: FolderRow,
+		opts?: { hideVia?: boolean },
 	): void {
 		const direct = folder.template;
 		const effective = folder.effectiveTemplate;
@@ -1033,7 +1347,7 @@ export class TemplateMapView extends ItemView {
 		if (direct) {
 			this.renderFileLink(container, direct);
 			// 前缀命中是默认口径，只有 My 兜底 / 原名命中才提示。
-			if (direct.via !== "prefix") {
+			if (!opts?.hideVia && direct.via !== "prefix") {
 				container.createSpan({
 					cls: "ioto-template-map-via",
 					text: this.viaLabel(direct, model),

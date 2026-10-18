@@ -765,6 +765,39 @@
     white-space: nowrap;
 }
 
+.ioto-template-map-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.ioto-template-map-modes {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--background-modifier-hover);
+}
+
+.ioto-template-map-mode-btn {
+    height: 24px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 1;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--text-muted);
+}
+
+.ioto-template-map-mode-btn.is-active {
+    background: var(--background-primary);
+    color: var(--text-normal);
+    box-shadow: var(--shadow-s);
+}
+
 .ioto-template-map-card {
     border: 1px solid var(--background-modifier-border);
     border-radius: 10px;
@@ -845,6 +878,8 @@
 
 .ioto-template-map-card-body {
     margin-top: 10px;
+    /* 极简版没有 .entry 这一层，卡片体自己充当窄栏容器查询的锚点。 */
+    container-type: inline-size;
 }
 
 .ioto-template-map-entry {
@@ -948,6 +983,19 @@
     font-weight: 500;
 }
 
+/* 极简版：去掉规则列后重设轨道；行仍走 subgrid。 */
+.ioto-template-map-table.is-minimal {
+    --ioto-tm-cols:
+        minmax(220px, 1.5fr)
+        minmax(220px, 1.4fr)
+        max-content;
+}
+
+.ioto-template-map-table.is-minimal .ioto-template-map-row {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
 /* 窄栏（分屏/侧边）下三列放不下：先压缩列宽，再窄到放不下就退成一列。 */
 @container (max-width: 520px) {
     .ioto-template-map-table {
@@ -962,10 +1010,18 @@
         gap: 6px;
         padding: 6px 8px;
     }
+
+    .ioto-template-map-table.is-minimal {
+        --ioto-tm-cols: minmax(0, 1.2fr) minmax(0, 1.1fr) 24px;
+    }
 }
 
 @container (max-width: 340px) {
     .ioto-template-map-table {
+        --ioto-tm-cols: 1fr;
+    }
+
+    .ioto-template-map-table.is-minimal {
         --ioto-tm-cols: 1fr;
     }
 
@@ -1316,6 +1372,14 @@ button.ioto-template-map-entry-summary:hover {
 
     .ioto-template-map-table {
         --ioto-tm-cols: 1fr;
+    }
+
+    .ioto-template-map-table.is-minimal {
+        --ioto-tm-cols: 1fr;
+    }
+
+    .ioto-template-map-header-actions {
+        width: 100%;
     }
 
     .ioto-template-map-row {
