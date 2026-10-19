@@ -724,6 +724,10 @@
     opacity: 0.9;
 }
 
+.ioto-template-generator-container .setting-item {
+    align-items: center;
+}
+
 /* ---------- Template Map View ---------- */
 .ioto-template-map-container {
     padding: 18px 22px 60px;
