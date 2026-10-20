@@ -29,6 +29,12 @@ import { PresetLoadModal } from "../modals/PresetLoadModal";
 import { PresetSaveModal } from "../modals/PresetSaveModal";
 import IOTOTemplateGeneratorPlugin from "../main";
 import { t } from "../lang/helpers";
+import { IotoSettingsService } from "../services/ioto-settings-services";
+import { TemplaterServices } from "../services/templater-services";
+import {
+	normalizePrefix,
+	templateSearchRoots,
+} from "../services/template-path-services";
 import {
 	pickSwitcherRow,
 	SwitcherTarget,
@@ -54,15 +60,29 @@ export class GeneratorView extends ItemView {
 	// UI Elements
 	middleContainer: HTMLElement;
 	rightContainer: HTMLElement;
-	userTemplatePrefix: string;
 
 	constructor(leaf: WorkspaceLeaf, plugin: IOTOTemplateGeneratorPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.app = this.plugin.app;
-		this.userTemplatePrefix =
-			this.app.plugins.plugins["ioto-settings"]?.settings
-				.userTemplatePrefix || "";
+	}
+
+	/** 用户前缀在点击时现读：插件设置改了不必重开视图。 */
+	private userPrefix(): string {
+		return normalizePrefix(
+			new IotoSettingsService(this.app).getUserTemplatePrefix(),
+		) ?? "";
+	}
+
+	/** 「选择文件」与「导入模板」的扫描根：默认目录 + `<前缀>IOTO`。 */
+	private resolveSearchRoots(): string[] {
+		const iotoSettings = new IotoSettingsService(this.app);
+		return templateSearchRoots({
+			templaterRoot:
+				new TemplaterServices(this.app).getTemplatesFolder(),
+			frameworkRoot: iotoSettings.getFrameworkPath(),
+			prefix: normalizePrefix(iotoSettings.getUserTemplatePrefix()),
+		});
 	}
 
 	getViewType() {
@@ -455,11 +475,10 @@ export class GeneratorView extends ItemView {
 			if (opt.name === "template") {
 				s.addButton((btn) => {
 					btn.setButtonText("Prefix").onClick(() => {
-						let prefix = this.userTemplatePrefix
-							? `${this.userTemplatePrefix}-`
-							: "";
-						target[opt.name] =
-							`${prefix}TP-${t(this.usage)}-${t("Switcher")}-`;
+						const prefix = this.userPrefix();
+						target[opt.name] = prefix
+							? `${prefix}-TP-${t(this.usage)}-${t("Switcher")}-`
+							: `TP-${t(this.usage)}-${t("Switcher")}-`;
 						this.renderMiddleColumn();
 					});
 				});
@@ -483,7 +502,10 @@ export class GeneratorView extends ItemView {
 								target[opt.name] = selectedFile.basename;
 								this.renderMiddleColumn();
 							},
-							["MyIOTO", "Templates", "Templater", t(this.usage)],
+							{
+								roots: this.resolveSearchRoots(),
+								includes: [t(this.usage)],
+							},
 						).open();
 					});
 			});
@@ -572,10 +594,10 @@ export class GeneratorView extends ItemView {
 					const prefixBtn = new ButtonComponent(row);
 					prefixBtn.setButtonText("Prefix");
 					prefixBtn.onClick(() => {
-						let prefix = this.userTemplatePrefix
-							? `${this.userTemplatePrefix}-`
-							: "";
-						item.template = `${prefix}TP-${t(this.usage)}-${item.match}`;
+						const prefix = this.userPrefix();
+						item.template = prefix
+							? `${prefix}-TP-${t(this.usage)}-${item.match}`
+							: `TP-${t(this.usage)}-${item.match}`;
 						this.renderMiddleColumn();
 					});
 
@@ -598,7 +620,10 @@ export class GeneratorView extends ItemView {
 								item.template = selectedFile.basename;
 								this.renderMiddleColumn();
 							},
-							["MyIOTO", "Templates", "Templater", t(this.usage)],
+							{
+								roots: this.resolveSearchRoots(),
+								includes: [t(this.usage)],
+							},
 						).open();
 					});
 
@@ -692,7 +717,10 @@ export class GeneratorView extends ItemView {
 								target[opt.name] = selectedFile.basename;
 								this.renderMiddleColumn();
 							},
-							["MyIOTO", "Templates", "Templater", t(this.usage)],
+							{
+								roots: this.resolveSearchRoots(),
+								includes: [t(this.usage)],
+							},
 						).open();
 					});
 			});
@@ -861,10 +889,14 @@ export class GeneratorView extends ItemView {
 	}
 
 	openImportModal() {
-		new ImportModal(this.app, (file) => this.importTemplate(file), [
-			t(this.usage),
-			t(this.type),
-		]).open();
+		// 扫描整个 Templater 根（含 MyIOTO / <前缀>IOTO / OB 目录），再按用法与类型收窄
+		const templaterRoot = new TemplaterServices(
+			this.app,
+		).getTemplatesFolder();
+		new ImportModal(this.app, (file) => this.importTemplate(file), {
+			roots: templaterRoot ? [templaterRoot] : [],
+			includes: [t(this.usage), t(this.type)],
+		}).open();
 	}
 
 	/** 成功载入返回 true；任何失败都已在内部弹过 Notice。 */

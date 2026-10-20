@@ -341,6 +341,14 @@
     max-height: 95vh;
 }
 
+/* 文件名下方的「保存到」提示：分流可能是静默的，落点必须看得见 */
+.modal.mod-script-preview .ioto-tg-target-hint {
+    margin-top: 6px;
+    color: var(--text-faint);
+    font-size: var(--font-ui-smaller);
+    word-break: break-all;
+}
+
 /* Settings Tabs */
 .ioto-template-generator-container .settings-tabs,
 .modal .settings-tabs {

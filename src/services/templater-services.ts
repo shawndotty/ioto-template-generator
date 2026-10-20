@@ -27,6 +27,11 @@ export class TemplaterServices {
 		return templater.settings || {};
 	}
 
+	/** Templater 的模板根目录；未装/未配置返回空串（调用方据此决定是否分流）。 */
+	public getTemplatesFolder(): string {
+		return this.getTemplater()?.settings?.templates_folder ?? "";
+	}
+
 	async addTemplaterHotkeys(
 		templatePaths: Array<string> = [],
 	): Promise<boolean> {

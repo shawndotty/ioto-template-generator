@@ -303,6 +303,7 @@ export default {
 	SCRIPT_PREVIEW_NOTICE_SAVED: "Saved to the database as ${file}",
 	SCRIPT_PREVIEW_NOTICE_UPDATED: "Updated ${path}",
 	SCRIPT_PREVIEW_TITLE: `Generated Template`,
+	SCRIPT_PREVIEW_SAVE_TO: `Save to: `,
 	MAIN_RIBBON_GENERATOR: `Open Generator`,
 	COMMAND_OPEN_GENERATOR: `Open IOTO Template Generator`,
 	DEFAULT_NEW_NOTE_FOLLOW_UP_ACTION_OPTION_0: `Show Options`,

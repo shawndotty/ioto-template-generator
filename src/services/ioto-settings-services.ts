@@ -77,4 +77,14 @@ export class IotoSettingsService {
 		if (!plugin) return null;
 		return plugin.settings || {};
 	}
+
+	/** 用户自定义模板前缀（已 trim）；未设置或插件未启用返回空串。 */
+	public getUserTemplatePrefix(): string {
+		return (this.getSettings()?.userTemplatePrefix ?? "").trim();
+	}
+
+	/** IOTO 框架目录，如 `0-辅助/IOTO`；未设置返回空串。 */
+	public getFrameworkPath(): string {
+		return this.getSettings()?.IOTOFrameworkPath ?? "";
+	}
 }

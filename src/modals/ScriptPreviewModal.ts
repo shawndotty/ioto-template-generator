@@ -17,6 +17,13 @@ import { t } from "../lang/helpers";
 import { IOTOTemplateGeneratorSettings } from "../settings";
 import { GENERATOR_VIEW_TYPE } from "../models/constants";
 import { TemplaterServices } from "../services/templater-services";
+import { IotoSettingsService } from "../services/ioto-settings-services";
+import {
+	TEMPLATE_KIND_FOLDER_KEY,
+	TemplateKind,
+	normalizePrefix,
+	resolveTemplateFolder,
+} from "../services/template-path-services";
 import { HotkeyService, HotkeyEntry } from "../services/hotkey-services";
 import { createEmptySwitcherContent } from "../processors/switcherTemplate";
 // 仅类型断言用：运行时 import 会与 GeneratorView 形成循环依赖
@@ -36,6 +43,8 @@ export class ScriptPreviewModal extends Modal {
 	private hotkey?: HotkeyEntry | null;
 	private isRecordingHotkey = false;
 	private hotkeyBtn: ButtonComponent;
+	/** 文件名下方的「保存到」提示；错分流是静默的，必须让人看得见落点。 */
+	private targetHintEl: HTMLElement | null = null;
 	/** 覆盖保存成功后的回调：调用方用它刷新「脏检查」基线。 */
 	private onSaved?: () => void;
 
@@ -57,9 +66,8 @@ export class ScriptPreviewModal extends Modal {
 		this.importedFile = importedFile;
 		this.settings = settings;
 		this.onSaved = onSaved;
-		this.prefix =
-			this.app.plugins.plugins["ioto-settings"].settings
-				.userTemplatePrefix || "";
+		// 仅用于拼默认文件名；真正的落点判定在保存那一刻重新读前缀
+		this.prefix = new IotoSettingsService(this.app).getUserTemplatePrefix();
 		this.folderSettings = folderSettings;
 		this.noteSettings = noteSettings;
 
@@ -97,16 +105,55 @@ export class ScriptPreviewModal extends Modal {
 		}
 	}
 
+	/** 仅选择器/切换器两种弹窗类型能走到这里；笔记模板由切换器规则各自的 kind 处理。 */
+	private currentKind(): TemplateKind {
+		return this.type === "Selector" ? "Selector" : "Switcher";
+	}
+
+	/**
+	 * 按「文件名的最终形态」决定落到哪个目录。
+	 * 前缀在每次调用时现读 ioto-settings —— 弹窗打开后用户改了前缀也不会错。
+	 */
+	private resolveFolder(kind: TemplateKind, name: string): string {
+		const configured =
+			kind === "Note"
+				? this.settings.noteTemplatesFolderPath
+				: kind === "Switcher"
+					? this.settings.switcherFolderPath
+					: this.settings.selectorFolderPath;
+		const iotoSettings = new IotoSettingsService(this.app);
+
+		return resolveTemplateFolder({
+			name,
+			kind,
+			prefix: normalizePrefix(iotoSettings.getUserTemplatePrefix()),
+			configuredFolder: configured || "",
+			templaterRoot: new TemplaterServices(this.app).getTemplatesFolder(),
+			frameworkRoot: iotoSettings.getFrameworkPath(),
+			kindFolderName: t(TEMPLATE_KIND_FOLDER_KEY[kind]),
+		});
+	}
+
 	makeTargetFilePath() {
 		if (this.importedFile) {
 			this.targetFilePath = this.importedFile.path;
 		} else {
-			const folderPath =
-				this.type === "Selector"
-					? this.settings.selectorFolderPath || ""
-					: this.settings.switcherFolderPath || "";
-			this.targetFilePath = `${folderPath}/${this.templateName}.md`;
+			const folderPath = this.resolveFolder(
+				this.currentKind(),
+				this.templateName,
+			).replace(/\/+$/, "");
+			this.targetFilePath = folderPath
+				? `${folderPath}/${this.templateName}.md`
+				: `${this.templateName}.md`;
 		}
+		this.updateTargetHint();
+	}
+
+	private updateTargetHint() {
+		if (!this.targetHintEl || this.importedFile) return;
+		this.targetHintEl.setText(
+			`${t("SCRIPT_PREVIEW_SAVE_TO")}${this.targetFilePath}`,
+		);
 	}
 
 	onOpen() {
@@ -147,6 +194,10 @@ export class ScriptPreviewModal extends Modal {
 							this.makeTargetFilePath();
 						}).inputEl.style.width = "100%"),
 			);
+			this.targetHintEl = this.contentEl.createDiv({
+				cls: "ioto-tg-target-hint",
+			});
+			this.updateTargetHint();
 		}
 
 		if (this.type === "Selector") {
@@ -202,6 +253,12 @@ export class ScriptPreviewModal extends Modal {
 							);
 							this.onSaved?.();
 						} else {
+							// 保存这一刻重算：文件名可能刚被改过，前缀也可能刚被改过
+							this.makeTargetFilePath();
+							await ensureFolder(
+								this.app,
+								parentFolderOf(this.targetFilePath),
+							);
 							await this.app.vault.create(
 								this.targetFilePath,
 								content,
@@ -271,18 +328,12 @@ export class ScriptPreviewModal extends Modal {
 								);
 							if (existingFile) return;
 
-							const switcherFolderPath =
-								this.settings.switcherFolderPath || "";
-							if (
-								switcherFolderPath &&
-								!(await this.app.vault.adapter.exists(
-									switcherFolderPath,
-								))
-							) {
-								await this.app.vault.createFolder(
-									switcherFolderPath,
-								);
-							}
+							// 切换器模板同样按最终文件名分流，并逐级建目录
+							const switcherFolderPath = this.resolveFolder(
+								"Switcher",
+								switcherTemplateName,
+							).replace(/\/+$/, "");
+							await ensureFolder(this.app, switcherFolderPath);
 
 							const fileName = `${switcherTemplateName}.md`;
 							const filePath = switcherFolderPath
@@ -368,20 +419,13 @@ export class ScriptPreviewModal extends Modal {
 												);
 											if (exists) return;
 
-											const dir =
-												this.settings
-													.noteTemplatesFolderPath ||
-												"";
-											if (
-												dir &&
-												!(await this.app.vault.adapter.exists(
-													dir,
-												))
-											) {
-												await this.app.vault.createFolder(
-													dir,
-												);
-											}
+											// 每条规则各自判定：同一次保存里 JL- 进 JLIOTO、
+											// My- 仍进 MyIOTO
+											const dir = this.resolveFolder(
+												"Note",
+												template,
+											).replace(/\/+$/, "");
+											await ensureFolder(this.app, dir);
 
 											const fileName = `${template}.md`;
 											const filePath = dir
@@ -551,5 +595,34 @@ export class ScriptPreviewModal extends Modal {
 			this.handleKeyDown,
 		);
 		this.contentEl.empty();
+		this.targetHintEl = null;
+	}
+}
+
+/** 目录部分；根目录下的文件返回空串。 */
+function parentFolderOf(path: string): string {
+	const index = path.lastIndexOf("/");
+	return index > 0 ? path.slice(0, index) : "";
+}
+
+/**
+ * 逐级建目录：`createFolder` 不会递归建父目录，
+ * `<前缀>IOTO/笔记模板` 首次保存时两级都不存在。
+ */
+async function ensureFolder(app: App, folder: string): Promise<void> {
+	const path = folder.replace(/^\/+|\/+$/g, "");
+	if (!path) return;
+
+	let current = "";
+	for (const segment of path.split("/")) {
+		if (!segment) continue;
+		current = current ? `${current}/${segment}` : segment;
+		if (await app.vault.adapter.exists(current)) continue;
+		try {
+			await app.vault.createFolder(current);
+		} catch (error) {
+			// 并发保存可能同时建同一层：确实是「刚被别人建好」才吞掉
+			if (!(await app.vault.adapter.exists(current))) throw error;
+		}
 	}
 }
