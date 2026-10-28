@@ -69,6 +69,7 @@ const settingsStub = {
 	taskSelectorEnableSubjectTask: true,
 	taskSelectorEnablePlanTask: true,
 	taskSelectorEnableNormalTask: true,
+	taskSubTaskOpenMode: 'linkOnly',
 	outcomeSelectorExcludesPaths: '',
 	outcomeSelectorShowOptionOrder: true,
 	outcomeSelectorShowBasePath: false,
@@ -193,6 +194,9 @@ test('创建任务：局部量桩让求值通过，Task 专属字段原样带出
 	assert.equal(note.template, '${switcherTemplate}');
 	// enableFutureDaysChoices 是布尔，写入求值结果
 	assert.equal(note.enableFutureDaysChoices, false);
+	// 子任务创建后的打开策略：新模板带的字段必须原样解析出来
+	assert.equal(note.openAfterCreate, true);
+	assert.equal(note.useCustomTDLName, false);
 });
 
 // —— 6. 碎片笔记（全字面量 / 模板字面量） ——
@@ -254,7 +258,55 @@ test('round-trip：导入后再生成，路径仍是表达式而不是被固化�
 	assert.match(script, /template: `\$\{switcherTemplate\}`/);
 });
 
-// —— 10. `with` 锁 ——
+// —— 10. 生成侧：Task 对齐库内新模板 ——
+
+test('生成任务：子任务打开策略与设置表达式都出现在脚本里', () => {
+	const script = ScriptEngine.generateSelector('Task', {}, {});
+
+	// 解构里要有 taskSubTaskOpenMode，否则下面的询问块根本跑不起来
+	assert.match(script, /taskSubTaskOpenMode\}/);
+	// noteSettings 的自描述默认值
+	assert.match(script, /openAfterCreate: true,/);
+	assert.match(script, /useCustomTDLName: false,/);
+	// subTask 分支：三态询问 + 覆盖 openAfterCreate
+	assert.match(script, /let subTaskOpenMode = taskSubTaskOpenMode \|\| "open";/);
+	assert.match(script, /subTaskOpenMode === "ask"/);
+	assert.match(script, /noteSettings\.openAfterCreate = subTaskOpenMode === "open";/);
+});
+
+test('生成任务：布尔/数组默认值绑定 ioto-settings 表达式，不再固化', () => {
+	const script = ScriptEngine.generateSelector('Task', {}, {});
+
+	assert.match(
+		script,
+		/excludesPaths: taskSelectorExcludesPaths \? taskSelectorExcludesPaths\.split\("\\n"\) : \[\],/,
+	);
+	assert.match(script, /showBasePathInOption: taskSelectorShowBasePath,/);
+	assert.match(script, /showOptionOrder: taskSelectorShowOptionOrder,/);
+	assert.match(script, /enableFutureDaysChoices: taskSelectorEnableFutureDaysChoices,/);
+	// 不得退化成字面量
+	assert.doesNotMatch(script, /showBasePathInOption: false,/);
+});
+
+test('生成任务：表单改过的值仍优先于默认表达式', () => {
+	const script = ScriptEngine.generateSelector(
+		'Task',
+		{ showBasePathInOption: true, excludesPaths: ['3-任务/归档'] },
+		{},
+	);
+
+	assert.match(script, /showBasePathInOption: true,/);
+	assert.match(script, /excludesPaths: \["3-任务\/归档"\],/);
+});
+
+test('生成输入：不挂默认表达式，数组仍是字面量', () => {
+	const script = ScriptEngine.generateSelector('Input', {}, {});
+
+	assert.match(script, /excludesPaths: \[\],/);
+	assert.match(script, /showBasePathInOption: false,/);
+});
+
+// —— 11. `with` 锁 ——
 
 test('with 锁：缺桩必须是 missing-identifier（函数体不能进严格模式）', async () => {
 	// `with` 在严格模式下是 SyntaxError。若有人给 new Function 的函数体加 "use strict"，

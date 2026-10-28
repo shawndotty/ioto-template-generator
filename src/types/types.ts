@@ -38,6 +38,8 @@ export interface TemplateOption {
 	description: string;
 	example?: string;
 	imageExplain?: string;
+	/** 仅用于代码生成：当表单值等于 defaultValue 时，改写成这段源码表达式 */
+	defaultExpression?: string;
 }
 
 export interface ConfigPreset {

@@ -17,6 +17,7 @@ const {
     taskSelectorEnableSubjectTask,
     taskSelectorEnablePlanTask,
     taskSelectorEnableNormalTask,
+    taskSubTaskOpenMode,
 } = app.plugins.plugins["ioto-settings"].settings;
 
 const ml = new (tp.user.IOTOMultiLangs(tp))(tp);
@@ -46,6 +47,7 @@ const noteSettings = {
     createPlanMode: false,
     taskType: "date",
     upTask: null,
+    openAfterCreate: true,
     selectedText,
 };
 
@@ -78,6 +80,16 @@ if (isInTaskFolder) {
 if (scope === "subTask") {
     noteSettings.upTask = activeFileBaseName ? `[[${activeFileBaseName}]]` : null;
     folderPath = currentFolderPath;
+
+    let subTaskOpenMode = taskSubTaskOpenMode || "open";
+    if (subTaskOpenMode === "ask") {
+        const pickedMode = await tp.system.suggester(
+            [ml.t("SubTaskFollowUpLinkOnly"), ml.t("SubTaskFollowUpOpen")],
+            ["linkOnly", "open"],
+        );
+        subTaskOpenMode = pickedMode || "linkOnly";
+    }
+    noteSettings.openAfterCreate = subTaskOpenMode === "open";
 } else if (scope === "currentProject") {
     folderPath = currentFolderPath;
 } else {

@@ -261,6 +261,13 @@ const onlyUseDateType = !(taskSelectorEnableSubjectTask || taskSelectorEnablePla
 			const defaultVal = opt.defaultValue;
 			const valueType = opt.valueType;
 			const key = opt.name;
+			const isDefault =
+				userVal === undefined ||
+				JSON.stringify(userVal) === JSON.stringify(defaultVal);
+			if (isDefault && opt.defaultExpression) {
+				templates += `\t${key}: ${opt.defaultExpression},\n`;
+				return;
+			}
 			const val =
 				userVal !== undefined && userVal !== defaultVal
 					? userVal
@@ -292,6 +299,7 @@ const onlyUseDateType = !(taskSelectorEnableSubjectTask || taskSelectorEnablePla
 			templates += `\tcreatePlanMode: false,\n`;
 			templates += `\ttaskType: "date",\n`;
 			templates += `\tupTask: null,\n`;
+			templates += `\topenAfterCreate: true,\n`;
 			templates += `\tselectedText,\n`;
 		}
 
@@ -304,6 +312,13 @@ const onlyUseDateType = !(taskSelectorEnableSubjectTask || taskSelectorEnablePla
 			const defaultVal = opt.defaultValue;
 			const valueType = opt.valueType;
 			const key = opt.name;
+			const isDefault =
+				userVal === undefined ||
+				JSON.stringify(userVal) === JSON.stringify(defaultVal);
+			if (isDefault && opt.defaultExpression) {
+				templates += `\t${key}: ${opt.defaultExpression},\n`;
+				return;
+			}
 			const val =
 				userVal !== undefined && userVal !== defaultVal
 					? userVal
@@ -366,6 +381,16 @@ if (isInTaskFolder) {
 if (scope === "subTask") {
     noteSettings.upTask = activeFileBaseName ? \`[[\${activeFileBaseName}]]\` : null;
     folderPath = currentFolderPath;
+
+    let subTaskOpenMode = taskSubTaskOpenMode || "open";
+    if (subTaskOpenMode === "ask") {
+        const pickedMode = await tp.system.suggester(
+            [ml.t("SubTaskFollowUpLinkOnly"), ml.t("SubTaskFollowUpOpen")],
+            ["linkOnly", "open"],
+        );
+        subTaskOpenMode = pickedMode || "linkOnly";
+    }
+    noteSettings.openAfterCreate = subTaskOpenMode === "open";
 } else if (scope === "currentProject") {
     folderPath = currentFolderPath;
 } else {
